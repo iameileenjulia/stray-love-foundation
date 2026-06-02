@@ -1,0 +1,371 @@
+.admin-users-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.admin-users-content {
+  flex: 1;
+  padding: 2rem;
+  background: #FFFBF7;
+  width: calc(100% - 280px);
+  overflow-x: auto;
+}
+
+/* Make the table scrollable on small screens */
+.users-table-container {
+  background: white;
+  border-radius: 32px;
+  border: 1px solid #FFE2D4;
+  overflow-x: auto;
+  width: 100%;
+  position: relative;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.users-table th,
+.users-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #FFE2D4;
+}
+
+.users-table th {
+  background: #FFF7F0;
+  color: #936E5C;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.users-table td {
+  white-space: nowrap;
+}
+
+/* Stats styles */
+.stats-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.stat-item {
+  padding: 0.5rem 1.2rem;
+  background: white;
+  border-radius: 60px;
+  border: 1px solid #FFE2D4;
+  font-size: 14px;
+  font-weight: 500;
+  color: #7F665A;
+}
+
+.stat-item i {
+  margin-right: 8px;
+  color: #C28A7A;
+}
+
+.stat-item.pending {
+  background: #FFF2EB;
+  border-color: #FFD4C4;
+}
+
+.stat-item.verified {
+  background: #E0F2E9;
+  border-color: #C5E0D5;
+}
+
+/* Search input */
+.search-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 20px;
+  border-radius: 60px;
+  border: 1px solid #FFDDD0;
+  background: white;
+  font-size: 14px;
+  margin-bottom: 2rem;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #FFB7A8;
+  box-shadow: 0 0 0 3px rgba(255, 183, 168, 0.2);
+}
+
+/* Button styles */
+.verify-btn {
+  background: #FEF0EA;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 60px;
+  cursor: pointer;
+  color: #6B9C8F;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  margin-right: 8px;
+}
+
+.verify-btn:hover {
+  background: #FFE6DC;
+  transform: scale(0.95);
+}
+
+.suspend-btn {
+  background: #FEF0EA;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 60px;
+  cursor: pointer;
+  color: #E57A5C;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.suspend-btn:hover {
+  background: #FFE6DC;
+  transform: scale(0.95);
+}
+
+/* Badge styles */
+.badge {
+  padding: 4px 12px;
+  border-radius: 60px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.badge-verified {
+  background: #E0F2E9;
+  color: #4B7B6E;
+}
+
+.badge-pending {
+  background: #FFF2EB;
+  color: #E57A5C;
+}
+
+.badge-rejected {
+  background: #FFE5D9;
+  color: #C27D62;
+}
+
+/* Status styles */
+.status-active {
+  background: #E0F2E9;
+  color: #4B7B6E;
+  padding: 4px 12px;
+  border-radius: 60px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.status-suspended {
+  background: #FFE5D9;
+  color: #C27D62;
+  padding: 4px 12px;
+  border-radius: 60px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* User info cell */
+.user-name {
+  font-weight: 600;
+  color: #5E4B3F;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: #A98978;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: white;
+  max-width: 550px;
+  width: 90%;
+  border-radius: 48px;
+  padding: 2rem;
+  position: relative;
+  border: 1px solid #FFE2D4;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.5rem;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #B28678;
+  transition: transform 0.2s;
+}
+
+.modal-close:hover {
+  transform: rotate(90deg);
+}
+
+.modal-container h2 {
+  color: #AC7E68;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.user-details {
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  margin: 0.8rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #FFE2D4;
+  padding-bottom: 0.5rem;
+}
+
+.detail-label {
+  font-weight: 700;
+  width: 100px;
+  color: #5E4B3F;
+}
+
+.detail-value {
+  color: #7F665A;
+  flex: 1;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.id-preview {
+  background: #F9F4EF;
+  border-radius: 24px;
+  padding: 1rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.id-preview i {
+  font-size: 2rem;
+  color: #C28A7A;
+  margin-bottom: 0.5rem;
+}
+
+.id-preview img {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+
+.admin-notes {
+  margin: 1rem 0;
+}
+
+.admin-notes label {
+  display: block;
+  font-weight: 600;
+  color: #936E5C;
+  margin-bottom: 0.5rem;
+}
+
+.admin-notes textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #FFDDD0;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.approve-btn {
+  background: #E0F2E9;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #4B7B6E;
+  cursor: pointer;
+  flex: 1;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reject-btn {
+  background: #FFE5D9;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #C27D62;
+  cursor: pointer;
+  flex: 1;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.approve-btn:hover, .reject-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-users-content {
+    padding: 1rem;
+  }
+  .stats-container {
+    gap: 0.5rem;
+  }
+  .stat-item {
+    font-size: 12px;
+    padding: 0.3rem 0.8rem;
+  }
+}
