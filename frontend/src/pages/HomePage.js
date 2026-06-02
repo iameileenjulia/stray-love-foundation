@@ -1,12 +1,173 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import './HomePage.css';
+import styled from '@emotion/styled';
+import { useAuth } from '../context/AuthContext';
+
+const Hero = styled.section`
+  background: linear-gradient(130deg, #FFF3EC 0%, #FEF7F0 100%);
+  padding: 5rem 2rem 6rem;
+  border-radius: 0 0 70px 70px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "🐾";
+    font-size: 260px;
+    opacity: 0.04;
+    position: absolute;
+    bottom: -50px;
+    right: -40px;
+    pointer-events: none;
+  }
+`;
+
+const HeroContent = styled.div`
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+`;
+
+const HeroTitle = styled.h2`
+  font-size: 3.8rem;
+  font-weight: 800;
+  background: linear-gradient(120deg, #DE8C72, #6B9C8F);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  margin-bottom: 1.2rem;
+
+  @media (max-width: 768px) {
+    font-size: 2.3rem;
+  }
+`;
+
+const HeroSubtitle = styled.p`
+  font-size: 1.25rem;
+  max-width: 700px;
+  margin: 1rem auto 2rem;
+  color: #6A5A52;
+`;
+
+const Section = styled.section`
+  margin: 5rem 0;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 2.3rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #AD8878, #6EA094);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+
+  @media (max-width: 768px) {
+    font-size: 1.9rem;
+  }
+`;
+
+const PetsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+`;
+
+const PetCard = styled.div`
+  background: white;
+  border-radius: 32px;
+  overflow: hidden;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 215, 195, 0.7);
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 22px 35px -12px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const PetImage = styled.div`
+  height: 240px;
+  background: #FAEEE8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.8rem;
+`;
+
+const PetInfo = styled.div`
+  padding: 1.2rem 1rem 1.5rem;
+  text-align: center;
+`;
+
+const PetName = styled.h3`
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #936E5C;
+  margin-bottom: 0.5rem;
+`;
+
+const StepsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+`;
+
+const StepCard = styled.div`
+  background: rgba(255, 247, 240, 0.7);
+  backdrop-filter: blur(2px);
+  padding: 1.4rem 0.8rem;
+  border-radius: 28px;
+  text-align: center;
+  border: 1px solid #FFE2D4;
+  transition: 0.2s;
+
+  &:hover {
+    background: #FFFFFFDD;
+    transform: translateY(-5px);
+  }
+`;
+
+const StepNumber = styled.div`
+  width: 48px;
+  height: 48px;
+  background: #FAD5C4;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.3rem;
+  margin: 0 auto 1rem;
+  color: #AA6E57;
+`;
+
+const Button = styled(Link)`
+  background: #FFC2AE;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 40px;
+  font-weight: 700;
+  color: #4D3E38;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: inline-block;
+  text-decoration: none;
+
+  &:hover {
+    background: #FFB099;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 22px rgba(255, 160, 130, 0.2);
+  }
+`;
 
 const HomePage = () => {
-  const { api } = useAuth();
   const [featuredPets, setFeaturedPets] = useState([]);
+  const { api } = useAuth();
 
   useEffect(() => {
     fetchFeaturedPets();
@@ -25,110 +186,65 @@ const HomePage = () => {
 
   return (
     <>
-      <div className="homepage">
-        <section className="hero">
-          <div className="hero-content">
-            <h2>Adopt. Rescue. Love.</h2>
-            <p>
-              We RESCUE, REHABILITATE, RESTORE TO HEALTH and REHOME abandoned, abused,
+      <Navbar />
+      <main>
+        <Hero>
+          <HeroContent>
+            <HeroTitle>Adopt. Rescue. Love.</HeroTitle>
+            <HeroSubtitle>
+              We RESCUE, REHABILITATE, RESTORE TO HEALTH and REHOME abandoned, abused, 
               infirm and neglected dogs and cats.
-            </p>
-            <Link to="/browse" className="btn-primary">
-              <i className="fas fa-paw"></i> Browse Pets
-            </Link>
-          </div>
-        </section>
+            </HeroSubtitle>
+            <Button to="/browse">Browse Pets</Button>
+          </HeroContent>
+        </Hero>
 
         <div className="container">
-          <section>
-            <h2 className="section-title">
-              <i className="fas fa-star"></i> FEATURED PETS
-            </h2>
-            <div className="pets-grid">
+          <Section>
+            <SectionTitle>🐾 Featured Pets</SectionTitle>
+            <PetsGrid>
               {featuredPets.map(pet => (
-                <div className="pet-card" key={pet._id}>
-                  <div className="pet-img">
-                    <i className={`fas fa-${pet.type === 'Dog' ? 'dog' : 'cat'}`}></i>
-                  </div>
-                  <div className="pet-info">
-                    <h3>{pet.name}</h3>
-                    <div className="pet-meta">
-                      <span>{pet.type}</span> • {pet.sex} • {pet.age}
+                <PetCard key={pet._id}>
+                  <PetImage>
+                    {pet.type === 'Dog' ? '🐕' : '🐱'}
+                  </PetImage>
+                  <PetInfo>
+                    <PetName>{pet.name}</PetName>
+                    <div style={{ color: '#A98978', marginBottom: '1rem' }}>
+                      {pet.type} • {pet.sex} • {pet.age}
                     </div>
-                    <Link to={`/browse?pet=${pet._id}`} className="btn-view">
-                      <i className="fas fa-info-circle"></i> View Details
-                    </Link>
-                  </div>
-                </div>
+                    <Button to="/browse" style={{ padding: '8px 24px', fontSize: '0.9rem' }}>View Details</Button>
+                  </PetInfo>
+                </PetCard>
               ))}
-            </div>
-          </section>
+            </PetsGrid>
+          </Section>
 
-          <section>
-            <h2 className="section-title">
-              <i className="fas fa-heart"></i> ABOUT US
-            </h2>
-            <div className="about-card">
-              <p>
-                STRAY Love Ph Foundation is committed to giving rescued, stray, and surrendered dogs and cats
-                a second chance at life through safe, loving, and responsible adoption. We connect animals
-                in need with compassionate families while promoting responsible pet ownership and long-term
+          <Section>
+            <SectionTitle>💖 About Us</SectionTitle>
+            <div style={{ maxWidth: 880, margin: '0 auto', background: '#FEF6F0', padding: '2.5rem', borderRadius: 52, textAlign: 'center' }}>
+              <p style={{ fontSize: '1.1rem', color: '#6B4F41', lineHeight: 1.6 }}>
+                STRAY Love Ph Foundation is committed to giving rescued, stray, and surrendered dogs and cats 
+                a second chance at life through safe, loving, and responsible adoption. We connect animals 
+                in need with compassionate families while promoting responsible pet ownership and long-term 
                 animal welfare.
               </p>
             </div>
-          </section>
+          </Section>
 
-          <section>
-            <h2 className="section-title">
-              <i className="fas fa-clipboard-list"></i> HOW ADOPTION WORKS
-            </h2>
-            <div className="steps-grid">
+          <Section>
+            <SectionTitle>📋 How Adoption Works</SectionTitle>
+            <StepsGrid>
               {steps.map((step, index) => (
-                <div className="step-card" key={index}>
-                  <div className="step-number">{index + 1}</div>
+                <StepCard key={index}>
+                  <StepNumber>{index + 1}</StepNumber>
                   <p>{step}</p>
-                </div>
+                </StepCard>
               ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="section-title">
-              <i className="fas fa-star-of-life"></i> SUCCESS STORIES
-            </h2>
-            <div className="stories-grid">
-              <div className="story-card">
-                <div className="story-user">
-                  <i className="fas fa-user-check"></i> <strong>User: Maria & Luna</strong>
-                </div>
-                <p className="story-text">
-                  "Adopting Luna changed our world. From a timid stray to the happiest companion – thank you STRAY Love!"
-                </p>
-              </div>
-              <div className="story-card">
-                <div className="story-user">
-                  <i className="fas fa-user-friends"></i> <strong>User: Carlo & Max</strong>
-                </div>
-                <p className="story-text">
-                  "Max was rescued after an accident, now he's a playful, healthy member of our family. Forever grateful!"
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="section-title">
-              <i className="fas fa-gavel"></i> LEGAL / RESPONSIBLE ADOPTION
-            </h2>
-            <div className="legal-list">
-              <span className="legal-badge"><i className="fas fa-file-alt"></i> Philippine adoption reminders</span>
-              <span className="legal-badge"><i className="fas fa-hand-holding-heart"></i> Responsible ownership</span>
-              <span className="legal-badge"><i className="fas fa-scale-balanced"></i> Animal welfare laws</span>
-              <span className="legal-badge"><i className="fas fa-syringe"></i> Vaccination importance</span>
-            </div>
-          </section>
+            </StepsGrid>
+          </Section>
         </div>
-      </div>
+      </main>
       <Footer />
     </>
   );
