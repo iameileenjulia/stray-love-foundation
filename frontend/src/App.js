@@ -1,36 +1,39 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import PrivateRoute from './components/PrivateRoute';
-import AdminRoute from './components/AdminRoute';
-
-// Public Pages
+import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import BrowsePetsPage from './pages/BrowsePetsPage';
-
-// User Pages
 import DashboardPage from './pages/DashboardPage';
 import DashboardBrowsePage from './pages/DashboardBrowsePage';
 import MyRequestsPage from './pages/MyRequestsPage';
 import MonitoringPage from './pages/MonitoringPage';
 import PublicPostsPage from './pages/PublicPostsPage';
 import ProfilePage from './pages/ProfilePage';
-
-// Admin Pages
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPetsPage from './pages/admin/AdminPetsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminRequestsPage from './pages/admin/AdminRequestsPage';
-import AdminMonitoringPage from './pages/admin/AdminMonitoringPage';
-import AdminPostsPage from './pages/admin/AdminPostsPage';
-import AdminSettingsPage from './pages/admin/AdminSettingsPage';
-import AdminLoginPage from './pages/admin/AdminLoginPage';
+import './pages/HomePage.css';
+import './components/Navbar.css';
+import './styles/globals.css';
 
-function App() {
+// Admin placeholder pages (to be created)
+const AdminRequestsPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Adoption Requests - Coming Soon</div>;
+const AdminMonitoringPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Monitoring - Coming Soon</div>;
+const AdminPostsPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Public Posts - Coming Soon</div>;
+const AdminSettingsPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Settings - Coming Soon</div>;
+
+const AppWrapper = () => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  
   return (
-    <AuthProvider>
+    <>
+      {!isAdminRoute && !isDashboardRoute && <Navbar />}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
@@ -38,31 +41,32 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/browse" element={<BrowsePetsPage />} />
         
+        {/* User Dashboard Routes */}
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/browse" element={<DashboardBrowsePage />} />
+        <Route path="/dashboard/my-requests" element={<MyRequestsPage />} />
+        <Route path="/dashboard/monitoring" element={<MonitoringPage />} />
+        <Route path="/dashboard/posts" element={<PublicPostsPage />} />
+        <Route path="/dashboard/profile" element={<ProfilePage />} />
+        
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route path="/admin" element={<AdminRoute />}>
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="pets" element={<AdminPetsPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="requests" element={<AdminRequestsPage />} />
-          <Route path="monitoring" element={<AdminMonitoringPage />} />
-          <Route path="posts" element={<AdminPostsPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-        </Route>
-        
-        {/* User Routes */}
-        <Route path="/dashboard" element={<PrivateRoute />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="browse" element={<DashboardBrowsePage />} />
-          <Route path="my-requests" element={<MyRequestsPage />} />
-          <Route path="monitoring" element={<MonitoringPage />} />
-          <Route path="posts" element={<PublicPostsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-        </Route>
-        
-        {/* 404 Redirect */}
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/pets" element={<AdminPetsPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/admin/requests" element={<AdminRequestsPage />} />
+        <Route path="/admin/monitoring" element={<AdminMonitoringPage />} />
+        <Route path="/admin/posts" element={<AdminPostsPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
       </Routes>
+    </>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppWrapper />
     </AuthProvider>
   );
 }
