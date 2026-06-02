@@ -16,15 +16,13 @@ import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPetsPage from './pages/admin/AdminPetsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminRequestsPage from './pages/admin/AdminRequestsPage';
+import AdminMonitoringPage from './pages/admin/AdminMonitoringPage';
+import AdminPostsPage from './pages/admin/AdminPostsPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import './pages/HomePage.css';
 import './components/Navbar.css';
 import './styles/globals.css';
-
-// Admin placeholder pages (to be created)
-const AdminRequestsPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Adoption Requests - Coming Soon</div>;
-const AdminMonitoringPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Monitoring - Coming Soon</div>;
-const AdminPostsPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Public Posts - Coming Soon</div>;
-const AdminSettingsPage = () => <div style={{ padding: '50px', textAlign: 'center' }}>Settings - Coming Soon</div>;
 
 const AppWrapper = () => {
   const location = useLocation();
