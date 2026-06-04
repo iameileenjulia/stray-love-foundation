@@ -12,6 +12,17 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Ensure MongoDB is connected before handling any request (serverless-safe)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('DB connection error:', err);
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
+
 // Store OTPs temporarily
 const otpStore = new Map();
 
@@ -47,7 +58,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 // Pet Schema
 const petSchema = new mongoose.Schema({
@@ -66,7 +77,7 @@ const petSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-const Pet = mongoose.model('Pet', petSchema);
+const Pet = mongoose.models.Pet || mongoose.model('Pet', petSchema);
 
 // ============== AUTH ROUTES ==============
 
@@ -317,49 +328,70 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-// MongoDB connection
-mongoose.connect('mongodb://localhost:27017/stray_love_ph')
-  .then(async () => {
-    console.log('✅ MongoDB connected');
-    
-    const adminExists = await User.findOne({ email: 'admin@strayloveph.org' });
-    if (!adminExists) {
-      const hashedPassword = await bcrypt.hash('Admin@123', 10);
-      await User.create({
-        fullName: 'System Administrator',
-        email: 'admin@strayloveph.org',
-        contact: '+639123456789',
-        password: hashedPassword,
-        role: 'admin',
-        isVerified: true,
-        emailVerified: true,
-        verificationStatus: 'approved'
-      });
-      console.log('✅ Admin user created');
-    } else {
-      await User.updateOne(
-        { email: 'admin@strayloveph.org' },
-        { verificationStatus: 'approved', emailVerified: true, isVerified: true }
-      );
-      console.log('✅ Admin user verified');
-    }
-    
-    const petCount = await Pet.countDocuments();
-    if (petCount === 0) {
-      await Pet.create([
-        { name: "Luna", type: "Dog", sex: "Female", age: "Young", breed: "Aspin", status: "Available", rescueStatus: "Rescued", description: "Sweet and gentle", adoptionFee: 500 },
-        { name: "Charlie", type: "Dog", sex: "Male", age: "Adult", breed: "Mixed", status: "Available", rescueStatus: "Stray", description: "Energetic buddy", adoptionFee: 300 },
-        { name: "Daisy", type: "Cat", sex: "Female", age: "Baby", breed: "Puspin", status: "Available", rescueStatus: "Surrendered", description: "Tiny fluffy kitten", adoptionFee: 400 }
-      ]);
-      console.log('✅ Sample pets added');
-    }
-  })
-  .catch(err => console.error('MongoDB error:', err));
+// One-time data seeding (admin account + sample pets)
+async function seedData() {
+  const adminExists = await User.findOne({ email: 'admin@strayloveph.org' });
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('Admin@123', 10);
+    await User.create({
+      fullName: 'System Administrator',
+      email: 'admin@strayloveph.org',
+      contact: '+639123456789',
+      password: hashedPassword,
+      role: 'admin',
+      isVerified: true,
+      emailVerified: true,
+      verificationStatus: 'approved'
+    });
+    console.log('✅ Admin user created');
+  } else {
+    await User.updateOne(
+      { email: 'admin@strayloveph.org' },
+      { verificationStatus: 'approved', emailVerified: true, isVerified: true }
+    );
+    console.log('✅ Admin user verified');
+  }
 
-const PORT = process.env.PORT || 5000;
-// Listen on all network interfaces
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Local: http://localhost:${PORT}`);
-  console.log(`📍 Network: http://10.144.88.131:${PORT}`);
-});
+  const petCount = await Pet.countDocuments();
+  if (petCount === 0) {
+    await Pet.create([
+      { name: "Luna", type: "Dog", sex: "Female", age: "Young", breed: "Aspin", status: "Available", rescueStatus: "Rescued", description: "Sweet and gentle", adoptionFee: 500 },
+      { name: "Charlie", type: "Dog", sex: "Male", age: "Adult", breed: "Mixed", status: "Available", rescueStatus: "Stray", description: "Energetic buddy", adoptionFee: 300 },
+      { name: "Daisy", type: "Cat", sex: "Female", age: "Baby", breed: "Puspin", status: "Available", rescueStatus: "Surrendered", description: "Tiny fluffy kitten", adoptionFee: 400 }
+    ]);
+    console.log('✅ Sample pets added');
+  }
+}
+
+// Cached MongoDB connection so serverless invocations reuse one connection
+let cached = global._mongooseCache;
+if (!cached) cached = global._mongooseCache = { conn: null, promise: null };
+
+async function connectDB() {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is not set');
+    }
+    cached.promise = mongoose.connect(process.env.MONGODB_URI).then(async (m) => {
+      console.log('✅ MongoDB connected');
+      await seedData();
+      return m;
+    });
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+// Export the app for Vercel's serverless runtime
+module.exports = app;
+
+// Only start a long-running server when run directly (local development)
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  connectDB().catch(err => console.error('MongoDB error:', err));
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 Local: http://localhost:${PORT}`);
+  });
+}
