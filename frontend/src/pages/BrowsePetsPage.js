@@ -42,23 +42,6 @@ const BrowsePetsPage = () => {
   if (loading) {
     return (
       <>
-        <nav className="navbar">
-          <div className="nav-container">
-            <div className="logo">
-              <div className="logo-img">🐾</div>
-              <div className="logo-text">
-                <h1>STRAY Love Ph</h1>
-                <span>Foundation · rescue & heal</span>
-              </div>
-            </div>
-            <div className="nav-links">
-              <Link to="/">Home</Link>
-              <Link to="/browse">Browse Pets</Link>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
-            </div>
-          </div>
-        </nav>
         <div style={{ textAlign: 'center', padding: '50px' }}>Loading pets...</div>
         <Footer />
       </>
@@ -67,24 +50,6 @@ const BrowsePetsPage = () => {
 
   return (
     <>
-      <nav className="navbar">
-        <div className="nav-container">
-          <div className="logo">
-            <div className="logo-img">🐾</div>
-            <div className="logo-text">
-              <h1>STRAY Love Ph</h1>
-              <span>Foundation · rescue & heal</span>
-            </div>
-          </div>
-          <div className="nav-links">
-            <Link to="/">Home</Link>
-            <Link to="/browse" className="active">Browse Pets</Link>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
-          </div>
-        </div>
-      </nav>
-
       <main>
         <div className="browse-header">
           <h1><i className="fas fa-paw"></i> Browse Pets</h1>
