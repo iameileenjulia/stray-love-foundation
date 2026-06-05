@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 import './RegisterPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const EMAILJS_SERVICE_ID  = process.env.REACT_APP_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY  = process.env.REACT_APP_EMAILJS_PUBLIC_KEY;
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -16,6 +21,7 @@ const RegisterPage = () => {
     confirmPassword: ''
   });
   const [otp, setOtp] = useState('');
+  const [generatedOTP, setGeneratedOTP] = useState('');
   const [idFile, setIdFile] = useState(null);
   const [fileName, setFileName] = useState('');
   const [errors, setErrors] = useState({});
@@ -26,23 +32,21 @@ const RegisterPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    }
-    
+
+    if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    
+
     if (!formData.contact.trim()) {
       newErrors.contact = 'Contact number is required';
     } else if (!/^[\+\d\s\-\(\)]{8,20}$/.test(formData.contact)) {
       newErrors.contact = 'Enter a valid phone number';
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
@@ -50,24 +54,19 @@ const RegisterPage = () => {
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])/.test(formData.password)) {
       newErrors.password = 'Password must include uppercase, lowercase, and special character';
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
-    if (!idFile) {
-      newErrors.idFile = 'Please upload a valid ID';
-    }
-    
+
+    if (!idFile) newErrors.idFile = 'Please upload a valid ID';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleFileChange = (e) => {
@@ -78,38 +77,54 @@ const RegisterPage = () => {
     }
   };
 
+  const startResendTimer = () => {
+    setResendCooldown(60);
+    const timer = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) { clearInterval(timer); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const sendOTP = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        toast.success('Verification code sent to your email!');
-        setStep(2);
-        setResendCooldown(60);
-        const timer = setInterval(() => {
-          setResendCooldown(prev => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        toast.error(data.message || 'Failed to send verification code');
-      }
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOTP(code);
+
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          to_name:  formData.fullName,
+          to_email: formData.email,
+          otp_code: code,
+          from_name: 'STRAY Love Ph Foundation',
+        },
+        EMAILJS_PUBLIC_KEY
+      );
+
+      toast.success('Verification code sent to your email!');
+      setStep(2);
+      startResendTimer();
     } catch (error) {
-      toast.error('Network error. Please try again.');
+      console.error('EmailJS error:', error);
+      toast.error('Failed to send verification code. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    await sendOTP();
+  };
+
+  const resendOTP = async () => {
+    if (resendCooldown > 0) return;
+    await sendOTP();
   };
 
   const verifyOTP = async () => {
@@ -117,28 +132,16 @@ const RegisterPage = () => {
       toast.error('Please enter a valid 6-digit verification code');
       return;
     }
-    
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, otp })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        toast.success('Email verified! Completing registration...');
-        await completeRegistration();
-      } else {
-        toast.error(data.message || 'Invalid verification code');
-      }
-    } catch (error) {
-      toast.error('Verification failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+
+    if (otp !== generatedOTP) {
+      toast.error('Invalid verification code. Please try again.');
+      return;
     }
+
+    setIsLoading(true);
+    toast.success('Email verified! Completing registration...');
+    await completeRegistration();
+    setIsLoading(false);
   };
 
   const completeRegistration = async () => {
@@ -152,21 +155,19 @@ const RegisterPage = () => {
         idImageData: reader.result,
         idFileName: fileName
       };
-      
+
       try {
         const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(userData)
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           toast.success('Registration successful! Please wait for admin verification (up to 72 hours).');
-          setTimeout(() => {
-            navigate('/login');
-          }, 3000);
+          setTimeout(() => navigate('/login'), 3000);
         } else {
           toast.error(data.message || 'Registration failed');
         }
@@ -174,21 +175,8 @@ const RegisterPage = () => {
         toast.error('Network error. Please try again.');
       }
     };
-    
+
     reader.readAsDataURL(idFile);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) {
-      return;
-    }
-    await sendOTP();
-  };
-
-  const resendOTP = async () => {
-    if (resendCooldown > 0) return;
-    await sendOTP();
   };
 
   return (
@@ -196,7 +184,7 @@ const RegisterPage = () => {
       <div className="register-page">
         <div className="register-container">
           <h2><i className="fas fa-paw"></i> CREATE ACCOUNT</h2>
-          
+
           <div className="progress-steps">
             <div className={`step ${step >= 1 ? 'active' : ''}`}>
               <div className="step-number">1</div>
@@ -222,7 +210,7 @@ const RegisterPage = () => {
                 />
                 {errors.fullName && <span className="error-text">{errors.fullName}</span>}
               </div>
-              
+
               <div className="form-group">
                 <label>Email *</label>
                 <input
@@ -234,7 +222,7 @@ const RegisterPage = () => {
                 />
                 {errors.email && <span className="error-text">{errors.email}</span>}
               </div>
-              
+
               <div className="form-group">
                 <label>Contact Number *</label>
                 <input
@@ -246,7 +234,7 @@ const RegisterPage = () => {
                 />
                 {errors.contact && <span className="error-text">{errors.contact}</span>}
               </div>
-              
+
               <div className="form-group">
                 <label>Password *</label>
                 <input
@@ -257,11 +245,11 @@ const RegisterPage = () => {
                   placeholder="••••••••"
                 />
                 <small className="password-hint">
-                  Must be 8+ characters, include uppercase, lowercase & special character
+                  Must be 8+ characters, include uppercase, lowercase &amp; special character
                 </small>
                 {errors.password && <span className="error-text">{errors.password}</span>}
               </div>
-              
+
               <div className="form-group">
                 <label>Confirm Password *</label>
                 <input
@@ -273,12 +261,12 @@ const RegisterPage = () => {
                 />
                 {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
               </div>
-              
+
               <div className="form-group">
                 <label>Upload Valid ID *</label>
                 <div className="file-input-wrapper" onClick={() => document.getElementById('idUpload').click()}>
                   <i className="fas fa-cloud-upload-alt"></i>
-                  <span>{fileName || 'Click to upload (Driver\'s license, Passport, etc.)'}</span>
+                  <span>{fileName || "Click to upload (Driver's license, Passport, etc.)"}</span>
                 </div>
                 <input
                   type="file"
@@ -289,7 +277,7 @@ const RegisterPage = () => {
                 />
                 {errors.idFile && <span className="error-text">{errors.idFile}</span>}
               </div>
-              
+
               <div className="checkbox-group">
                 <input
                   type="checkbox"
@@ -299,7 +287,7 @@ const RegisterPage = () => {
                 />
                 <label htmlFor="showPasswordRegister">Show Password</label>
               </div>
-              
+
               <button type="submit" className="btn-register" disabled={isLoading}>
                 {isLoading ? 'Sending Code...' : 'SIGN UP'}
               </button>
@@ -314,7 +302,7 @@ const RegisterPage = () => {
                 We've sent a 6-digit verification code to<br />
                 <strong>{formData.email}</strong>
               </p>
-              
+
               <div className="form-group">
                 <label>Enter Verification Code</label>
                 <input
@@ -326,32 +314,32 @@ const RegisterPage = () => {
                   className="otp-input"
                 />
               </div>
-              
+
               <button onClick={verifyOTP} className="btn-register" disabled={isLoading}>
                 {isLoading ? 'Verifying...' : 'VERIFY & REGISTER'}
               </button>
-              
+
               <div className="resend-otp">
                 <p>Didn't receive the code?</p>
-                <button 
-                  onClick={resendOTP} 
+                <button
+                  onClick={resendOTP}
                   disabled={resendCooldown > 0}
                   className="resend-btn"
                 >
                   {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                 </button>
               </div>
-              
+
               <button onClick={() => setStep(1)} className="back-btn">
                 <i className="fas fa-arrow-left"></i> Back to Registration
               </button>
             </div>
           )}
-          
+
           <div className="login-link">
             Already have an account? <Link to="/login">Login</Link>
           </div>
-          
+
           <div className="verification-note">
             <i className="fas fa-info-circle"></i>
             <p>After registration, admin will review your ID (up to 72 hours). You can only adopt pets after admin approval.</p>
