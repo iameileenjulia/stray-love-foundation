@@ -136,12 +136,14 @@ const BrowsePetsPage = () => {
                     ) : (
                       <i className={`fas fa-${pet.type === 'Dog' ? 'dog' : 'cat'} fa-4x`}></i>
                     )}
-                    <span className="status-badge badge-available">Available</span>
                   </div>
                   <div className="pet-info">
                     <h3>{pet.name}</h3>
                     <div className="pet-meta">
                       <span>{pet.type}</span> · {pet.sex} · {pet.age}
+                      <span className="status-badge badge-available" style={{ position: 'static', marginLeft: '6px', fontSize: '0.7rem', padding: '2px 8px' }}>
+                        {pet.status}
+                      </span>
                     </div>
                     <p className="pet-desc">
                       {pet.description
