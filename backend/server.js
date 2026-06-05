@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors());
@@ -14,6 +16,78 @@ let pets = [
   { _id: '2', name: 'Charlie', type: 'Dog', sex: 'Male', age: 'Adult', status: 'Available', description: 'Energetic buddy', adoptionFee: 300 },
   { _id: '3', name: 'Daisy', type: 'Cat', sex: 'Female', age: 'Baby', status: 'Available', description: 'Tiny fluffy kitten', adoptionFee: 400 }
 ];
+
+// ── Email transporter ──────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// ── Time-based OTP (stateless — works on Vercel serverless) ────────
+const OTP_SECRET = process.env.OTP_SECRET || 'stray_love_otp_2025';
+
+function generateOTP(email) {
+  const window = Math.floor(Date.now() / (10 * 60 * 1000));
+  const hmac = crypto.createHmac('sha256', OTP_SECRET).update(`${email}:${window}`).digest('hex');
+  return (parseInt(hmac.slice(0, 8), 16) % 900000 + 100000).toString();
+}
+
+function verifyOTP(email, otp) {
+  const now = Math.floor(Date.now() / (10 * 60 * 1000));
+  for (let w = now; w >= now - 1; w--) {
+    const hmac = crypto.createHmac('sha256', OTP_SECRET).update(`${email}:${w}`).digest('hex');
+    const valid = (parseInt(hmac.slice(0, 8), 16) % 900000 + 100000).toString();
+    if (otp === valid) return true;
+  }
+  return false;
+}
+
+// ── Send OTP ────────────────────────────────────────────────────────
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  const existingUser = users.find(u => u.email === email);
+  if (existingUser) return res.status(400).json({ message: 'Email already registered' });
+
+  const otp = generateOTP(email);
+
+  try {
+    await transporter.sendMail({
+      from: `"STRAY Love Ph Foundation" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Your STRAY Love Ph Verification Code',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px;border-radius:12px;border:1px solid #FFE2D4;">
+          <h2 style="color:#C28A7A;">🐾 STRAY Love Ph Foundation</h2>
+          <p style="color:#5C4E48;">Your email verification code is:</p>
+          <p style="font-size:38px;font-weight:bold;letter-spacing:10px;color:#C28A7A;margin:16px 0;">${otp}</p>
+          <p style="color:#5C4E48;">This code expires in <strong>10 minutes</strong>.</p>
+          <p style="color:#bbb;font-size:12px;">If you didn't request this, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+    res.json({ message: 'Verification code sent to your email' });
+  } catch (error) {
+    console.error('Email error:', error);
+    res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+  }
+});
+
+// ── Verify OTP ──────────────────────────────────────────────────────
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ message: 'Email and code are required' });
+
+  if (!verifyOTP(email, otp)) {
+    return res.status(400).json({ message: 'Invalid or expired verification code' });
+  }
+
+  res.json({ message: 'Email verified successfully' });
+});
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
