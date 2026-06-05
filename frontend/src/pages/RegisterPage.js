@@ -110,7 +110,12 @@ const RegisterPage = () => {
       startResendTimer();
     } catch (error) {
       console.error('EmailJS error:', error);
-      toast.error('Failed to send verification code. Please check your connection and try again.');
+      console.error('EmailJS config:', {
+        serviceId: EMAILJS_SERVICE_ID,
+        templateId: EMAILJS_TEMPLATE_ID,
+        publicKey: EMAILJS_PUBLIC_KEY ? '✓ set' : '✗ missing',
+      });
+      toast.error(`EmailJS error: ${error?.text || error?.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
