@@ -75,13 +75,6 @@ const RegisterPage = () => {
 
     setIsLoading(true);
     try {
-      const idImageData = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(idFile);
-      });
-
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,7 +83,6 @@ const RegisterPage = () => {
           email: formData.email,
           contact: formData.contact,
           password: formData.password,
-          idImageData,
           idFileName: fileName
         })
       });
@@ -104,7 +96,7 @@ const RegisterPage = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Connection error. Make sure the backend is reachable and try again.');
+      toast.error('Connection error. Please try again.');
     } finally {
       setIsLoading(false);
     }
