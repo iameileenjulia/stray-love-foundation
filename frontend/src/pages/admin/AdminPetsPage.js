@@ -228,7 +228,11 @@ const AdminPetsPage = () => {
                   <td><strong>{pet.name}</strong></td>
                   <td>{pet.type}</td>
                   <td>
-                    <span className={`status-badge ${pet.status === 'Available' ? 'status-available' : 'status-adopted'}`}>
+                    <span className={`status-badge ${
+                      pet.status === 'Available' ? 'status-available' :
+                      pet.status === 'Pending' ? 'status-pending' :
+                      'status-adopted'
+                    }`}>
                       {pet.status}
                     </span>
                   </td>
@@ -395,7 +399,11 @@ const AdminPetsPage = () => {
               <div className="detail-row">
                 <span className="detail-label">Status:</span>
                 <span className="detail-value">
-                  <span className={`status-badge ${viewingPet.status === 'Available' ? 'status-available' : 'status-adopted'}`}>
+                  <span className={`status-badge ${
+                    viewingPet.status === 'Available' ? 'status-available' :
+                    viewingPet.status === 'Pending' ? 'status-pending' :
+                    'status-adopted'
+                  }`}>
                     {viewingPet.status}
                   </span>
                 </span>
