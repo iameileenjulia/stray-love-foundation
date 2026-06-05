@@ -304,3 +304,64 @@
 .back-btn:hover {
   color: #D28D72;
 }
+
+/* Success / Pending Approval */
+.success-notice {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.success-icon {
+  font-size: 4rem;
+  color: #6B9C8F;
+  margin-bottom: 1rem;
+}
+
+.success-notice h2 {
+  font-size: 1.8rem;
+  color: #4A7A6E;
+  margin-bottom: 0.8rem;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: #4A7A6E;
+}
+
+.success-notice > p {
+  color: #5C4E48;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.approval-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: #FFF8F2;
+  border: 1.5px solid #FFD6C4;
+  border-radius: 20px;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1.8rem;
+  text-align: left;
+}
+
+.approval-notice > i {
+  font-size: 1.6rem;
+  color: #E0A070;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.approval-notice strong {
+  display: block;
+  color: #C28A7A;
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.approval-notice p {
+  color: #7F665A;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
