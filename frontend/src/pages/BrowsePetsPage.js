@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import './BrowsePetsPage.css';
@@ -7,8 +7,7 @@ import './BrowsePetsPage.css';
 const PETS_PER_PAGE = 8;
 
 const BrowsePetsPage = () => {
-  const { api, user } = useAuth();
-  const navigate = useNavigate();
+  const { api } = useAuth();
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,7 +22,7 @@ const BrowsePetsPage = () => {
   const fetchPets = async () => {
     try {
       const response = await api.get('/pets');
-      setPets(response.data);
+      setPets(response.data.filter(pet => pet.status === 'Available'));
     } catch (error) {
       console.error('Error fetching pets:', error);
     } finally {
@@ -47,7 +46,6 @@ const BrowsePetsPage = () => {
     if (filters.type !== 'all' && pet.type !== filters.type) return false;
     if (filters.sex !== 'all' && pet.sex !== filters.sex) return false;
     if (filters.age !== 'all' && pet.age !== filters.age) return false;
-    if (filters.status !== 'all' && pet.status !== filters.status) return false;
     return true;
   });
 
@@ -129,13 +127,11 @@ const BrowsePetsPage = () => {
                 <div className="pet-card" key={pet._id} onClick={() => setSelectedPet(pet)}>
                   <div className="pet-img">
                     {pet.imageData ? (
-                      <img src={pet.imageData} alt={pet.name} />
+                      <img src={pet.imageData} alt={pet.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <i className={`fas fa-${pet.type === 'Dog' ? 'dog' : 'cat'} fa-4x`}></i>
                     )}
-                    <span className={`status-badge ${pet.status === 'Available' ? 'badge-available' : 'badge-adopted'}`}>
-                      {pet.status}
-                    </span>
+                    <span className="status-badge badge-available">Available</span>
                   </div>
                   <div className="pet-info">
                     <h3>{pet.name}</h3>
@@ -218,22 +214,12 @@ const BrowsePetsPage = () => {
               </div>
               <div className="modal-detail-row">
                 <span><i className="fas fa-heart"></i> Status</span>
-                <span className={selectedPet.status === 'Available' ? 'text-available' : 'text-adopted'}>
-                  {selectedPet.status}
-                </span>
+                <span className="text-available">Available</span>
               </div>
             </div>
-            {!user ? (
-              <div className="register-note">
-                <i className="fas fa-lock"></i> <Link to="/register">Register</Link> to see full details &amp; adopt
-              </div>
-            ) : (
-              selectedPet.status === 'Available' && (
-                <button className="adopt-btn" onClick={() => navigate('/dashboard/browse')}>
-                  <i className="fas fa-paw"></i> Adopt
-                </button>
-              )
-            )}
+            <div className="register-note">
+              <i className="fas fa-lock"></i> <Link to="/register">Register</Link> to see full details &amp; adopt
+            </div>
           </div>
         </div>
       )}
