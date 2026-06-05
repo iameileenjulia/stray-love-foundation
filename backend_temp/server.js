@@ -23,9 +23,6 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Store OTPs temporarily
-const otpStore = new Map();
-
 // Email service
 const { sendVerificationEmail, sendApprovalEmail, sendRejectionEmail } = require('./services/emailService');
 
@@ -79,6 +76,17 @@ const petSchema = new mongoose.Schema({
 
 const Pet = mongoose.models.Pet || mongoose.model('Pet', petSchema);
 
+// OTP Schema — stored in DB so it survives across serverless invocations.
+// TTL index auto-deletes documents once expiresAt passes.
+const otpSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  otp: String,
+  verified: { type: Boolean, default: false },
+  expiresAt: { type: Date, expires: 0 }
+});
+
+const Otp = mongoose.models.Otp || mongoose.model('Otp', otpSchema);
+
 // ============== AUTH ROUTES ==============
 
 // Send OTP for email verification
@@ -92,12 +100,13 @@ app.post('/api/auth/send-otp', async (req, res) => {
     }
     
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    otpStore.set(email, {
-      otp,
-      expiresAt: Date.now() + 10 * 60 * 1000
-    });
-    
+
+    await Otp.findOneAndUpdate(
+      { email },
+      { otp, verified: false, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+      { upsert: true, new: true }
+    );
+
     await sendVerificationEmail(email, otp);
     
     res.json({ message: 'Verification code sent to your email' });
@@ -111,24 +120,25 @@ app.post('/api/auth/send-otp', async (req, res) => {
 app.post('/api/auth/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
-    const storedData = otpStore.get(email);
-    
+
+    const storedData = await Otp.findOne({ email });
+
     if (!storedData) {
       return res.status(400).json({ message: 'No verification code found. Please request a new one.' });
     }
-    
-    if (Date.now() > storedData.expiresAt) {
-      otpStore.delete(email);
+
+    if (Date.now() > storedData.expiresAt.getTime()) {
+      await Otp.deleteOne({ email });
       return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
     }
-    
+
     if (storedData.otp !== otp) {
       return res.status(400).json({ message: 'Invalid verification code' });
     }
-    
-    otpStore.set(email, { ...storedData, verified: true });
-    
+
+    storedData.verified = true;
+    await storedData.save();
+
     res.json({ message: 'Email verified successfully' });
   } catch (error) {
     console.error('Error verifying OTP:', error);
@@ -141,7 +151,7 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { fullName, email, contact, password, idImageData, idFileName } = req.body;
     
-    const storedData = otpStore.get(email);
+    const storedData = await Otp.findOne({ email });
     if (!storedData || !storedData.verified) {
       return res.status(400).json({ message: 'Please verify your email first' });
     }
@@ -163,8 +173,8 @@ app.post('/api/auth/register', async (req, res) => {
       verificationRequestedAt: new Date()
     });
     await user.save();
-    
-    otpStore.delete(email);
+
+    await Otp.deleteOne({ email });
     
     res.json({ 
       message: 'Registration successful! Please wait for admin verification (up to 72 hours).',

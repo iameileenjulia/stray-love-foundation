@@ -4,7 +4,7 @@ import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 import './RegisterPage.css';
 
-const API_URL = 'http://10.144.88.131:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
