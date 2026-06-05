@@ -17,14 +17,16 @@ let pets = [
   { _id: '3', name: 'Daisy', type: 'Cat', sex: 'Female', age: 'Baby', status: 'Available', description: 'Tiny fluffy kitten', adoptionFee: 400 }
 ];
 
-// ── Email transporter ──────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// ── Email transporter (created fresh per-request to pick up env vars) ─
+function createTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+}
 
 // ── Time-based OTP (stateless — works on Vercel serverless) ────────
 const OTP_SECRET = process.env.OTP_SECRET || 'stray_love_otp_2025';
@@ -56,12 +58,13 @@ app.post('/api/auth/send-otp', async (req, res) => {
   const otp = generateOTP(email);
 
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    // Email not configured — log OTP to Vercel console so it can be tested
-    console.log(`[OTP for ${email}]: ${otp}`);
-    return res.json({ message: 'Verification code sent to your email' });
+    console.warn('EMAIL_USER / EMAIL_PASS not set — email not sent');
+    console.log(`[DEV OTP for ${email}]: ${otp}`);
+    return res.status(500).json({ message: 'Email service is not configured. Please contact the administrator.' });
   }
 
   try {
+    const transporter = createTransporter();
     await transporter.sendMail({
       from: `"STRAY Love Ph Foundation" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -79,9 +82,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
     res.json({ message: 'Verification code sent to your email' });
   } catch (error) {
     console.error('Email send error:', error.message);
-    // Still return success so the user can proceed — OTP is logged to console
-    console.log(`[OTP fallback for ${email}]: ${otp}`);
-    res.json({ message: 'Verification code sent to your email' });
+    res.status(500).json({ message: 'Failed to send verification email. Check EMAIL_USER and EMAIL_PASS in Vercel environment variables.' });
   }
 });
 
@@ -98,7 +99,7 @@ app.post('/api/auth/verify-otp', (req, res) => {
 });
 
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working!' });
+  res.json({ message: 'Backend is working!', emailConfigured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASS) });
 });
 
 app.get('/api/pets', (req, res) => {
