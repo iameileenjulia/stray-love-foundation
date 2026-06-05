@@ -74,36 +74,40 @@ const RegisterPage = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const response = await fetch(`${API_URL}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: formData.fullName,
-            email: formData.email,
-            contact: formData.contact,
-            password: formData.password,
-            idImageData: reader.result,
-            idFileName: fileName
-          })
-        });
+    try {
+      const idImageData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(idFile);
+      });
 
-        const data = await response.json();
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          contact: formData.contact,
+          password: formData.password,
+          idImageData,
+          idFileName: fileName
+        })
+      });
 
-        if (response.ok) {
-          setRegistered(true);
-        } else {
-          toast.error(data.message || 'Registration failed. Please try again.');
-        }
-      } catch (error) {
-        toast.error('Network error. Please try again.');
-      } finally {
-        setIsLoading(false);
+      const data = await response.json();
+
+      if (response.ok) {
+        setRegistered(true);
+      } else {
+        toast.error(data.message || 'Registration failed. Please try again.');
       }
-    };
-    reader.readAsDataURL(idFile);
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Connection error. Make sure the backend is reachable and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (registered) {
