@@ -11,21 +11,18 @@ const AdminPetsPage = () => {
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const [editingPet, setEditingPet] = useState(null);
+  const [viewingPet, setViewingPet] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imageFileName, setImageFileName] = useState('Click to upload');
+  const [filters, setFilters] = useState({ type: [], sex: [], age: [], status: [], rescue: [] });
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'Dog',
-    sex: 'Male',
-    age: 'Young',
-    breed: '',
-    status: 'Available',
-    rescueStatus: 'Rescued',
-    description: '',
-    vaccinationHistory: '',
-    medicalNotes: '',
-    adoptionFee: 0,
-    imageData: null
+    name: '', type: 'Dog', sex: 'Male', age: 'Young', breed: '',
+    status: 'Available', rescueStatus: 'Rescued', description: '',
+    vaccinationHistory: '', medicalNotes: '', adoptionFee: 0
   });
 
   useEffect(() => {
@@ -36,10 +33,16 @@ const AdminPetsPage = () => {
     fetchPets();
   }, [user, navigate]);
 
+  const getStoredImages = () => {
+    try { return JSON.parse(localStorage.getItem('petImages') || '{}'); } catch { return {}; }
+  };
+
   const fetchPets = async () => {
     try {
       const response = await api.get('/pets');
-      setPets(response.data);
+      const storedImages = getStoredImages();
+      const merged = response.data.map(p => ({ ...p, imageData: storedImages[p._id] || p.imageData || null }));
+      setPets(merged);
     } catch (error) {
       console.error('Error fetching pets:', error);
       toast.error('Failed to load pets');
@@ -50,7 +53,6 @@ const AdminPetsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     const petData = {
       name: formData.name,
       type: formData.type,
@@ -62,35 +64,35 @@ const AdminPetsPage = () => {
       description: formData.description,
       vaccinationHistory: formData.vaccinationHistory,
       medicalNotes: formData.medicalNotes,
-      adoptionFee: Number(formData.adoptionFee) || 0,
-      imageData: formData.imageData
+      adoptionFee: Number(formData.adoptionFee) || 0
     };
 
     try {
+      let savedPet;
       if (editingPet) {
-        await api.put(`/pets/${editingPet._id}`, petData);
+        const response = await api.put(`/pets/${editingPet._id}`, petData);
+        savedPet = response.data;
         toast.success('Pet updated successfully!');
       } else {
-        await api.post('/pets', petData);
+        const response = await api.post('/pets', petData);
+        savedPet = response.data;
         toast.success('Pet added successfully!');
       }
-      fetchPets();
-      setShowModal(false);
-      setEditingPet(null);
-      setFormData({
-        name: '',
-        type: 'Dog',
-        sex: 'Male',
-        age: 'Young',
-        breed: '',
-        status: 'Available',
-        rescueStatus: 'Rescued',
-        description: '',
-        vaccinationHistory: '',
-        medicalNotes: '',
-        adoptionFee: 0,
-        imageData: null
-      });
+
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const stored = getStoredImages();
+          stored[savedPet._id] = reader.result;
+          localStorage.setItem('petImages', JSON.stringify(stored));
+          fetchPets();
+        };
+        reader.readAsDataURL(imageFile);
+      } else {
+        fetchPets();
+      }
+
+      closeFormModal();
     } catch (error) {
       console.error('Error saving pet:', error);
       toast.error(error.response?.data?.message || 'Failed to save pet');
@@ -101,6 +103,9 @@ const AdminPetsPage = () => {
     if (window.confirm('Are you sure you want to delete this pet?')) {
       try {
         await api.delete(`/pets/${petId}`);
+        const stored = getStoredImages();
+        delete stored[petId];
+        localStorage.setItem('petImages', JSON.stringify(stored));
         toast.success('Pet deleted successfully!');
         fetchPets();
       } catch (error) {
@@ -109,58 +114,56 @@ const AdminPetsPage = () => {
     }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, imageData: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
+  const openAddForm = () => {
+    setEditingPet(null);
+    setImageFile(null);
+    setImageFileName('Click to upload');
+    setFormData({
+      name: '', type: 'Dog', sex: 'Male', age: 'Young', breed: '',
+      status: 'Available', rescueStatus: 'Rescued', description: '',
+      vaccinationHistory: '', medicalNotes: '', adoptionFee: 0
+    });
+    setShowFormModal(true);
   };
 
-  const openModal = (pet = null) => {
-    if (pet) {
-      setEditingPet(pet);
-      setFormData({
-        name: pet.name,
-        type: pet.type,
-        sex: pet.sex,
-        age: pet.age,
-        breed: pet.breed || '',
-        status: pet.status,
-        rescueStatus: pet.rescueStatus,
-        description: pet.description,
-        vaccinationHistory: pet.vaccinationHistory || '',
-        medicalNotes: pet.medicalNotes || '',
-        adoptionFee: pet.adoptionFee || 0,
-        imageData: pet.imageData || null
-      });
-    } else {
-      setEditingPet(null);
-      setFormData({
-        name: '',
-        type: 'Dog',
-        sex: 'Male',
-        age: 'Young',
-        breed: '',
-        status: 'Available',
-        rescueStatus: 'Rescued',
-        description: '',
-        vaccinationHistory: '',
-        medicalNotes: '',
-        adoptionFee: 0,
-        imageData: null
-      });
-    }
-    setShowModal(true);
+  const openEditForm = (pet) => {
+    setEditingPet(pet);
+    setImageFile(null);
+    setImageFileName(pet.imageData ? 'Image loaded' : 'Click to upload');
+    setFormData({
+      name: pet.name, type: pet.type, sex: pet.sex, age: pet.age,
+      breed: pet.breed || '', status: pet.status,
+      rescueStatus: pet.rescueStatus || 'Rescued',
+      description: pet.description || '',
+      vaccinationHistory: pet.vaccinationHistory || '',
+      medicalNotes: pet.medicalNotes || '',
+      adoptionFee: pet.adoptionFee || 0
+    });
+    setShowViewModal(false);
+    setShowFormModal(true);
+  };
+
+  const closeFormModal = () => {
+    setShowFormModal(false);
+    setEditingPet(null);
+    setImageFile(null);
+    setImageFileName('Click to upload');
+  };
+
+  const toggleFilter = (key, value) => {
+    setFilters(prev => {
+      const arr = prev[key];
+      return { ...prev, [key]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value] };
+    });
   };
 
   const filteredPets = pets.filter(pet => {
-    if (searchTerm && !pet.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
+    if (searchTerm && !pet.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (filters.type.length && !filters.type.includes(pet.type)) return false;
+    if (filters.sex.length && !filters.sex.includes(pet.sex)) return false;
+    if (filters.age.length && !filters.age.includes(pet.age)) return false;
+    if (filters.status.length && !filters.status.includes(pet.status)) return false;
+    if (filters.rescue.length && !filters.rescue.includes(pet.rescueStatus)) return false;
     return true;
   });
 
@@ -179,7 +182,7 @@ const AdminPetsPage = () => {
       <main className="admin-content">
         <div className="page-header">
           <h1><i className="fas fa-paw"></i> MANAGE PETS</h1>
-          <button className="add-pet-btn" onClick={() => openModal()}>
+          <button className="add-pet-btn" onClick={openAddForm}>
             <i className="fas fa-plus"></i> Add New Pet
           </button>
         </div>
@@ -194,6 +197,9 @@ const AdminPetsPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button className="filter-btn" onClick={() => setShowFilterModal(true)}>
+            <i className="fas fa-sliders-h"></i> Filter
+          </button>
         </div>
 
         <div className="pets-table-container">
@@ -203,8 +209,6 @@ const AdminPetsPage = () => {
                 <th>Image</th>
                 <th>Name</th>
                 <th>Type</th>
-                <th>Sex</th>
-                <th>Age</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -220,27 +224,25 @@ const AdminPetsPage = () => {
                         <i className={`fas fa-${pet.type === 'Dog' ? 'dog' : 'cat'}`}></i>
                       )}
                     </div>
-                   </td>
+                  </td>
                   <td><strong>{pet.name}</strong></td>
                   <td>{pet.type}</td>
-                  <td>{pet.sex}</td>
-                  <td>{pet.age}</td>
                   <td>
                     <span className={`status-badge ${pet.status === 'Available' ? 'status-available' : 'status-adopted'}`}>
                       {pet.status}
                     </span>
-                   </td>
+                  </td>
                   <td>
                     <div className="action-buttons">
-                      <button className="action-btn view" onClick={() => openModal(pet)}>
-                        <i className="fas fa-edit"></i> Edit
+                      <button className="action-btn view" onClick={() => { setViewingPet(pet); setShowViewModal(true); }}>
+                        <i className="fas fa-eye"></i> View
                       </button>
                       <button className="action-btn delete" onClick={() => handleDelete(pet._id)}>
                         <i className="fas fa-trash"></i> Delete
                       </button>
                     </div>
-                   </td>
-                 </tr>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -250,12 +252,12 @@ const AdminPetsPage = () => {
         </div>
       </main>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+      {/* Add / Edit Pet Modal */}
+      {showFormModal && (
+        <div className="modal-overlay" onClick={closeFormModal}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-            <i className="fas fa-times modal-close" onClick={() => setShowModal(false)}></i>
-            <h2>{editingPet ? 'EDIT PET' : 'ADD NEW PET'}</h2>
+            <i className="fas fa-times modal-close" onClick={closeFormModal}></i>
+            <h2>{editingPet ? 'EDIT PET' : 'ADD PET FORM'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Pet Name *</label>
@@ -264,32 +266,17 @@ const AdminPetsPage = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  placeholder="e.g., Luna"
                 />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Type</label>
-                  <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                    <option value="Dog">Dog</option>
-                    <option value="Cat">Cat</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Sex</label>
-                  <select value={formData.sex} onChange={(e) => setFormData({ ...formData, sex: e.target.value })}>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Age</label>
-                  <select value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })}>
-                    <option value="Baby">Baby</option>
-                    <option value="Young">Young</option>
-                    <option value="Adult">Adult</option>
-                    <option value="Senior">Senior</option>
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>Age</label>
+                <input
+                  type="text"
+                  value={formData.age}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  placeholder="e.g., Young, Adult, Baby"
+                />
               </div>
               <div className="form-group">
                 <label>Breed</label>
@@ -300,39 +287,43 @@ const AdminPetsPage = () => {
                   placeholder="e.g., Aspin, Mixed, Persian"
                 />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Status</label>
-                  <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                    <option value="Available">Available</option>
-                    <option value="Adopted">Adopted</option>
-                    <option value="Pending">Pending</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Rescue Status</label>
-                  <select value={formData.rescueStatus} onChange={(e) => setFormData({ ...formData, rescueStatus: e.target.value })}>
-                    <option value="Rescued">Rescued</option>
-                    <option value="Stray">Stray</option>
-                    <option value="Surrendered">Surrendered</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Adoption Fee (PHP)</label>
-                  <input
-                    type="number"
-                    value={formData.adoptionFee}
-                    onChange={(e) => setFormData({ ...formData, adoptionFee: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
+              <div className="form-group">
+                <label>Sex</label>
+                <select value={formData.sex} onChange={(e) => setFormData({ ...formData, sex: e.target.value })}>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                  <option value="Dog">Dog</option>
+                  <option value="Cat">Cat</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                  <option value="Available">Available</option>
+                  <option value="Adopted">Adopted</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Rescue Status</label>
+                <select value={formData.rescueStatus} onChange={(e) => setFormData({ ...formData, rescueStatus: e.target.value })}>
+                  <option value="Rescued">Rescued</option>
+                  <option value="Stray">Stray</option>
+                  <option value="Surrendered">Surrendered</option>
+                </select>
               </div>
               <div className="form-group">
                 <label>Description</label>
                 <textarea
-                  rows="3"
+                  rows="2"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the pet's personality, behavior, etc."
+                  placeholder="Describe the pet's personality"
                 />
               </div>
               <div className="form-group">
@@ -355,16 +346,117 @@ const AdminPetsPage = () => {
               </div>
               <div className="form-group">
                 <label>Upload Image</label>
-                <div className="file-input-wrapper" onClick={() => document.getElementById('petImage').click()}>
+                <div className="file-input-wrapper" onClick={() => document.getElementById('petImageInput').click()}>
                   <i className="fas fa-cloud-upload-alt"></i>
-                  <span>{formData.imageData ? 'Image selected' : 'Click to upload image'}</span>
+                  <span>{imageFileName}</span>
                 </div>
-                <input type="file" id="petImage" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+                <input
+                  type="file"
+                  id="petImageInput"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) { setImageFile(file); setImageFileName(file.name); }
+                  }}
+                />
               </div>
               <button type="submit" className="save-btn">
-                <i className="fas fa-save"></i> {editingPet ? 'Update Pet' : 'Save Pet'}
+                <i className="fas fa-save"></i> Save Pet
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {showViewModal && viewingPet && (
+        <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <i className="fas fa-times modal-close" onClick={() => setShowViewModal(false)}></i>
+            <h2>
+              PET PROFILE{' '}
+              <button className="edit-inline-btn" onClick={() => openEditForm(viewingPet)}>
+                <i className="fas fa-edit"></i> Edit
+              </button>
+            </h2>
+            {viewingPet.imageData && (
+              <div className="view-pet-img">
+                <img src={viewingPet.imageData} alt={viewingPet.name} />
+              </div>
+            )}
+            <div className="user-details">
+              <div className="detail-row"><span className="detail-label">Name:</span><span className="detail-value">{viewingPet.name}</span></div>
+              <div className="detail-row"><span className="detail-label">Age:</span><span className="detail-value">{viewingPet.age}</span></div>
+              <div className="detail-row"><span className="detail-label">Sex:</span><span className="detail-value">{viewingPet.sex}</span></div>
+              <div className="detail-row"><span className="detail-label">Type:</span><span className="detail-value">{viewingPet.type}</span></div>
+              <div className="detail-row"><span className="detail-label">Breed:</span><span className="detail-value">{viewingPet.breed || 'Unknown'}</span></div>
+              <div className="detail-row"><span className="detail-label">Rescue Status:</span><span className="detail-value">{viewingPet.rescueStatus || '—'}</span></div>
+              <div className="detail-row">
+                <span className="detail-label">Status:</span>
+                <span className="detail-value">
+                  <span className={`status-badge ${viewingPet.status === 'Available' ? 'status-available' : 'status-adopted'}`}>
+                    {viewingPet.status}
+                  </span>
+                </span>
+              </div>
+              <div className="detail-row"><span className="detail-label">Description:</span><span className="detail-value">{viewingPet.description || '—'}</span></div>
+              <div className="detail-row"><span className="detail-label">Vaccination:</span><span className="detail-value">{viewingPet.vaccinationHistory || '—'}</span></div>
+              <div className="detail-row"><span className="detail-label">Medical Notes:</span><span className="detail-value">{viewingPet.medicalNotes || '—'}</span></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
+          <div className="modal-container filter-modal" onClick={(e) => e.stopPropagation()}>
+            <i className="fas fa-times modal-close" onClick={() => setShowFilterModal(false)}></i>
+            <h2>Filter Pets</h2>
+            <div className="filter-group">
+              <label>Type</label>
+              <div className="filter-options">
+                {['Dog', 'Cat'].map(v => (
+                  <label key={v}><input type="checkbox" checked={filters.type.includes(v)} onChange={() => toggleFilter('type', v)} /> {v}</label>
+                ))}
+              </div>
+            </div>
+            <div className="filter-group">
+              <label>Sex</label>
+              <div className="filter-options">
+                {['Male', 'Female'].map(v => (
+                  <label key={v}><input type="checkbox" checked={filters.sex.includes(v)} onChange={() => toggleFilter('sex', v)} /> {v}</label>
+                ))}
+              </div>
+            </div>
+            <div className="filter-group">
+              <label>Age</label>
+              <div className="filter-options">
+                {['Baby', 'Young', 'Adult'].map(v => (
+                  <label key={v}><input type="checkbox" checked={filters.age.includes(v)} onChange={() => toggleFilter('age', v)} /> {v}</label>
+                ))}
+              </div>
+            </div>
+            <div className="filter-group">
+              <label>Status</label>
+              <div className="filter-options">
+                {['Available', 'Adopted', 'Pending'].map(v => (
+                  <label key={v}><input type="checkbox" checked={filters.status.includes(v)} onChange={() => toggleFilter('status', v)} /> {v}</label>
+                ))}
+              </div>
+            </div>
+            <div className="filter-group">
+              <label>Rescue Status</label>
+              <div className="filter-options">
+                {['Rescued', 'Stray', 'Surrendered'].map(v => (
+                  <label key={v}><input type="checkbox" checked={filters.rescue.includes(v)} onChange={() => toggleFilter('rescue', v)} /> {v}</label>
+                ))}
+              </div>
+            </div>
+            <button className="save-btn" onClick={() => setShowFilterModal(false)}>
+              Apply Filter
+            </button>
           </div>
         </div>
       )}

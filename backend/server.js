@@ -106,6 +106,61 @@ app.get('/api/pets', (req, res) => {
   res.json(pets);
 });
 
+app.post('/api/pets', (req, res) => {
+  try {
+    const { name, type, sex, age, breed, status, rescueStatus, description, vaccinationHistory, medicalNotes, adoptionFee } = req.body;
+    if (!name) return res.status(400).json({ message: 'Pet name is required' });
+    const newPet = {
+      _id: Date.now().toString(),
+      name, type: type || 'Dog', sex: sex || 'Male', age: age || 'Young',
+      breed: breed || '', status: status || 'Available',
+      rescueStatus: rescueStatus || 'Rescued', description: description || '',
+      vaccinationHistory: vaccinationHistory || '', medicalNotes: medicalNotes || '',
+      adoptionFee: Number(adoptionFee) || 0, createdAt: new Date()
+    };
+    pets.push(newPet);
+    res.json(newPet);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/api/pets/:id', (req, res) => {
+  try {
+    const index = pets.findIndex(p => p._id === req.params.id);
+    if (index === -1) return res.status(404).json({ message: 'Pet not found' });
+    const { name, type, sex, age, breed, status, rescueStatus, description, vaccinationHistory, medicalNotes, adoptionFee } = req.body;
+    pets[index] = {
+      ...pets[index],
+      name: name || pets[index].name,
+      type: type || pets[index].type,
+      sex: sex || pets[index].sex,
+      age: age || pets[index].age,
+      breed: breed !== undefined ? breed : pets[index].breed,
+      status: status || pets[index].status,
+      rescueStatus: rescueStatus || pets[index].rescueStatus,
+      description: description !== undefined ? description : pets[index].description,
+      vaccinationHistory: vaccinationHistory !== undefined ? vaccinationHistory : pets[index].vaccinationHistory,
+      medicalNotes: medicalNotes !== undefined ? medicalNotes : pets[index].medicalNotes,
+      adoptionFee: adoptionFee !== undefined ? Number(adoptionFee) : pets[index].adoptionFee
+    };
+    res.json(pets[index]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/pets/:id', (req, res) => {
+  try {
+    const index = pets.findIndex(p => p._id === req.params.id);
+    if (index === -1) return res.status(404).json({ message: 'Pet not found' });
+    pets.splice(index, 1);
+    res.json({ message: 'Pet deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { fullName, email, contact, password } = req.body;

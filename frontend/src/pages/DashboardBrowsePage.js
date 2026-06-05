@@ -32,7 +32,12 @@ const DashboardBrowsePage = () => {
   const fetchPets = async () => {
     try {
       const response = await api.get('/pets');
-      setPets(response.data.filter(pet => pet.status === 'Available'));
+      const storedImages = (() => { try { return JSON.parse(localStorage.getItem('petImages') || '{}'); } catch { return {}; } })();
+      setPets(
+        response.data
+          .filter(pet => pet.status === 'Available')
+          .map(pet => ({ ...pet, imageData: storedImages[pet._id] || pet.imageData || null }))
+      );
     } catch (error) {
       console.error('Error fetching pets:', error);
       toast.error('Failed to load pets');
