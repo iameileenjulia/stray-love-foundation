@@ -273,6 +273,30 @@ app.put('/api/admin/users/:id/suspend', (req, res) => {
   res.json({ ...user, password: undefined });
 });
 
+// ── Admin: update own profile ─────────────────────────────────────────
+app.put('/api/admin/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'No token' });
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const admin = users.find(u => u._id === decoded.id && u.role === 'admin');
+    if (!admin) return res.status(403).json({ message: 'Not authorized' });
+
+    const { fullName, email, currentPassword, password } = req.body;
+    if (password) {
+      if (!currentPassword) return res.status(400).json({ message: 'Current password is required to change password' });
+      const valid = await bcrypt.compare(currentPassword, admin.password);
+      if (!valid) return res.status(400).json({ message: 'Current password is incorrect' });
+      admin.password = await bcrypt.hash(password, 10);
+    }
+    if (fullName) admin.fullName = fullName;
+    if (email) admin.email = email;
+    res.json({ message: 'Profile updated successfully', fullName: admin.fullName, email: admin.email });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.get('/api/admin/stats', (req, res) => {
   res.json({
     totalUsers: users.length,
