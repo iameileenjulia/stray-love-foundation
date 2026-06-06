@@ -335,6 +335,28 @@ app.delete('/api/admin/posts/:id', (req, res) => {
   res.json({ message: 'Post deleted successfully' });
 });
 
+// ── User: update own profile ──────────────────────────────────────────
+app.put('/api/auth/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'No token' });
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const user = users.find(u => u._id === decoded.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { fullName, email, contact, password, idImageData, idFileName } = req.body;
+    if (fullName) user.fullName = fullName;
+    if (email) user.email = email;
+    if (contact) user.contact = contact;
+    if (password) user.password = await bcrypt.hash(password, 10);
+    if (idImageData) { user.idImageData = idImageData; user.idFileName = idFileName || ''; }
+
+    res.json({ ...user, password: undefined });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ── Admin: update own profile ─────────────────────────────────────────
 app.put('/api/admin/profile', async (req, res) => {
   try {
