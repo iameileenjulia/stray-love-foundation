@@ -410,6 +410,35 @@ app.post('/api/adoptions', (req, res) => {
   }
 });
 
+// ── User: get my adoption requests ───────────────────────────────────
+app.get('/api/adoptions/my-requests', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const userId = decoded.id;
+    const myRequests = adoptionRequests.filter(r => r.user._id === userId);
+    res.json([...myRequests].sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate)));
+  } catch { res.json([]); }
+});
+
+// ── User: cancel an adoption request ─────────────────────────────────
+app.delete('/api/adoptions/:id', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const userId = decoded.id;
+    const idx = adoptionRequests.findIndex(r => r._id === req.params.id && r.user._id === userId);
+    if (idx === -1) return res.status(404).json({ message: 'Request not found' });
+    if (adoptionRequests[idx].status !== 'Pending') {
+      return res.status(400).json({ message: 'Only pending requests can be cancelled' });
+    }
+    adoptionRequests[idx].status = 'Cancelled';
+    res.json({ message: 'Request cancelled successfully' });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+});
+
 // ── Admin: get all adoption requests ─────────────────────────────────
 app.get('/api/admin/requests', (req, res) => {
   res.json([...adoptionRequests].sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate)));

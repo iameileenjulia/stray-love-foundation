@@ -802,3 +802,131 @@
   background: #E0F2E9;
   color: #4B7B6E;
 }
+
+/* ── My Requests Page ── */
+.requests-header {
+  margin-bottom: 2rem;
+}
+
+.requests-header h1 {
+  font-size: 2rem;
+  background: linear-gradient(135deg, #AD8878, #6EA094);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+
+.requests-table {
+  background: white;
+  border-radius: 32px;
+  overflow: hidden;
+  border: 1px solid #FFE2D4;
+  box-shadow: var(--shadow-sm);
+}
+
+.requests-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.requests-table th,
+.requests-table td {
+  padding: 1rem 1.2rem;
+  text-align: left;
+  border-bottom: 1px solid #FFE2D4;
+  font-size: 0.93rem;
+}
+
+.requests-table th {
+  background: #FFF7F0;
+  color: #936E5C;
+  font-weight: 600;
+}
+
+.requests-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.requests-table tbody tr:hover {
+  background: #FFFAF6;
+}
+
+.req-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.2rem 0.8rem;
+  border-radius: 60px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.req-status-badge.status-pending   { background: #FFF2EB; color: #E57A5C; }
+.req-status-badge.status-approved  { background: #E0F2E9; color: #4B7B6E; }
+.req-status-badge.status-rejected  { background: #FFE5D9; color: #C27D62; }
+.req-status-badge.status-cancelled { background: #F0F0F0; color: #999; }
+.req-status-badge.status-monitoring { background: #F0EAF8; color: #8B7BA8; }
+
+.btn-details {
+  background: #FEF0EA;
+  border: none;
+  padding: 0.35rem 1rem;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #C27D62;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.btn-details:hover {
+  background: #FFDBCE;
+  transform: scale(0.97);
+}
+
+.admin-response {
+  background: #F9F4EF;
+  padding: 0.8rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #7F665A;
+  line-height: 1.6;
+}
+
+.cancel-req-btn {
+  background: #FFE5D9;
+  border: none;
+  padding: 11px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #C27D62;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cancel-req-btn:hover:not(:disabled) {
+  background: #FFD4C4;
+  transform: translateY(-2px);
+}
+
+.cancel-req-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 860px) {
+  .requests-table th,
+  .requests-table td {
+    padding: 0.8rem;
+  }
+}
