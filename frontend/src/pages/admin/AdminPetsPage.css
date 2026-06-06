@@ -541,6 +541,91 @@
   object-fit: cover;
 }
 
+/* ── Posts Page ── */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 28px;
+  padding: 1.2rem;
+  text-align: center;
+  border: 1px solid #FFE2D4;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card > i {
+  font-size: 1.8rem;
+  color: #C28A7A;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.stat-number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #6B9C8F;
+}
+
+.stat-label {
+  color: #7F665A;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.visibility-badge {
+  padding: 0.2rem 0.8rem;
+  border-radius: 60px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.visibility-public  { background: #E0F2E9; color: #4B7B6E; }
+.visibility-private { background: #F1E9E4; color: #A5745E; }
+.visibility-hidden  { background: #FFE5D9; color: #C27D62; }
+
+.action-btn.hide    { color: #E57A5C; }
+.action-btn.approve { color: #6B9C8F; }
+.action-btn.delete  { color: #C27D62; }
+
+.confirm-btn {
+  background: #E57A5C;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  flex: 1;
+  transition: transform 0.2s;
+}
+
+.confirm-btn:hover { transform: translateY(-2px); background: #D06A4C; }
+
+.cancel-btn {
+  background: #F1E9E4;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #7F665A;
+  cursor: pointer;
+  flex: 1;
+  transition: transform 0.2s;
+}
+
+.cancel-btn:hover { transform: translateY(-2px); background: #E8DDD6; }
+
 /* ── Settings Page ── */
 .settings-grid {
   display: grid;

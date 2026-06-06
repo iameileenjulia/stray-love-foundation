@@ -13,6 +13,7 @@ app.use(express.json());
 let users = [];
 let monitoringReports = [];
 let adoptionRequests = [];
+let posts = [];
 let pets = [
   { _id: '1', name: 'Luna', type: 'Dog', sex: 'Female', age: 'Young', status: 'Available', description: 'Sweet and gentle', adoptionFee: 500 },
   { _id: '2', name: 'Charlie', type: 'Dog', sex: 'Male', age: 'Adult', status: 'Available', description: 'Energetic buddy', adoptionFee: 300 },
@@ -271,6 +272,67 @@ app.put('/api/admin/users/:id/suspend', (req, res) => {
 
   user.isSuspended = !user.isSuspended;
   res.json({ ...user, password: undefined });
+});
+
+// ── User: create a post ───────────────────────────────────────────────
+app.post('/api/posts', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    let authorData = { fullName: 'Unknown', email: '', _id: '' };
+    if (token) {
+      try {
+        const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+        const u = users.find(x => x._id === decoded.id);
+        if (u) authorData = { _id: u._id, fullName: u.fullName, email: u.email };
+      } catch {}
+    }
+    const { petName, caption, visibility } = req.body;
+    const post = {
+      _id: Date.now().toString(),
+      authorId: authorData._id,
+      authorName: authorData.fullName,
+      authorEmail: authorData.email,
+      petName: petName || '',
+      caption: caption || '',
+      visibility: visibility || 'public',
+      adminStatus: 'approved',
+      createdAt: new Date()
+    };
+    posts.push(post);
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ── Public: get visible posts ─────────────────────────────────────────
+app.get('/api/posts', (req, res) => {
+  res.json(
+    posts
+      .filter(p => p.visibility === 'public' && p.adminStatus !== 'hidden')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  );
+});
+
+// ── Admin: get all posts ──────────────────────────────────────────────
+app.get('/api/admin/posts', (req, res) => {
+  res.json([...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+// ── Admin: toggle post visibility ─────────────────────────────────────
+app.put('/api/admin/posts/:id/visibility', (req, res) => {
+  const post = posts.find(p => p._id === req.params.id);
+  if (!post) return res.status(404).json({ message: 'Post not found' });
+  post.adminStatus = req.body.adminStatus || 'approved';
+  res.json(post);
+});
+
+// ── Admin: delete post ────────────────────────────────────────────────
+app.delete('/api/admin/posts/:id', (req, res) => {
+  const index = posts.findIndex(p => p._id === req.params.id);
+  if (index === -1) return res.status(404).json({ message: 'Post not found' });
+  posts.splice(index, 1);
+  res.json({ message: 'Post deleted successfully' });
 });
 
 // ── Admin: update own profile ─────────────────────────────────────────
