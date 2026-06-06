@@ -12,6 +12,7 @@ app.use(express.json());
 // In-memory storage
 let users = [];
 let monitoringReports = [];
+let adoptionRequests = [];
 let pets = [
   { _id: '1', name: 'Luna', type: 'Dog', sex: 'Female', age: 'Young', status: 'Available', description: 'Sweet and gentle', adoptionFee: 500 },
   { _id: '2', name: 'Charlie', type: 'Dog', sex: 'Male', age: 'Adult', status: 'Available', description: 'Energetic buddy', adoptionFee: 300 },
@@ -285,8 +286,58 @@ app.get('/api/admin/activities', (req, res) => {
   res.json([{ icon: 'fa-user-plus', text: 'Admin dashboard loaded' }]);
 });
 
+// ── User: submit adoption request ────────────────────────────────────
 app.post('/api/adoptions', (req, res) => {
-  res.json({ message: 'Adoption request submitted successfully' });
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    let userData = { fullName: 'Unknown', email: '', contact: '', _id: '', isVerified: false };
+    if (token) {
+      try {
+        const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+        const u = users.find(x => x._id === decoded.id);
+        if (u) {
+          userData = {
+            _id: u._id, fullName: u.fullName, email: u.email,
+            contact: u.contact || '', isVerified: u.verificationStatus === 'approved'
+          };
+        }
+      } catch {}
+    }
+    const { petId, applicationAnswers } = req.body;
+    const pet = pets.find(p => p._id === petId);
+    const now = new Date();
+    const gracePeriodEnd = new Date(now.getTime() + 72 * 60 * 60 * 1000);
+    const request = {
+      _id: Date.now().toString(),
+      user: userData,
+      pet: pet ? { _id: pet._id, name: pet.name, type: pet.type, sex: pet.sex, age: pet.age, breed: pet.breed || 'Mixed' } : { name: 'Unknown' },
+      applicationAnswers: applicationAnswers || {},
+      status: 'Pending',
+      adminResponse: '',
+      requestDate: now,
+      gracePeriodEnd
+    };
+    adoptionRequests.push(request);
+    res.json({ message: 'Adoption request submitted! 72-hour reflection period started.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ── Admin: get all adoption requests ─────────────────────────────────
+app.get('/api/admin/requests', (req, res) => {
+  res.json([...adoptionRequests].sort((a, b) => new Date(b.requestDate) - new Date(a.requestDate)));
+});
+
+// ── Admin: approve or reject an adoption request ──────────────────────
+app.put('/api/admin/requests/:id', (req, res) => {
+  const request = adoptionRequests.find(r => r._id === req.params.id);
+  if (!request) return res.status(404).json({ message: 'Request not found' });
+  const { status, adminResponse } = req.body;
+  request.status = status || request.status;
+  if (adminResponse !== undefined) request.adminResponse = adminResponse;
+  request.reviewedAt = new Date();
+  res.json(request);
 });
 
 // ── User: get adopted pets ────────────────────────────────────────────
