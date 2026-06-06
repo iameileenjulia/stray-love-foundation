@@ -11,6 +11,7 @@ app.use(express.json());
 
 // In-memory storage
 let users = [];
+let monitoringReports = [];
 let pets = [
   { _id: '1', name: 'Luna', type: 'Dog', sex: 'Female', age: 'Young', status: 'Available', description: 'Sweet and gentle', adoptionFee: 500 },
   { _id: '2', name: 'Charlie', type: 'Dog', sex: 'Male', age: 'Adult', status: 'Available', description: 'Energetic buddy', adoptionFee: 300 },
@@ -286,6 +287,58 @@ app.get('/api/admin/activities', (req, res) => {
 
 app.post('/api/adoptions', (req, res) => {
   res.json({ message: 'Adoption request submitted successfully' });
+});
+
+// ── User: get adopted pets ────────────────────────────────────────────
+app.get('/api/users/adopted-pets', (req, res) => {
+  res.json([]);
+});
+
+// ── User: submit monitoring report ───────────────────────────────────
+app.post('/api/monitoring/reports', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    let userName = 'Unknown', userEmail = '';
+    if (token) {
+      try {
+        const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+        const u = users.find(x => x._id === decoded.id);
+        if (u) { userName = u.fullName; userEmail = u.email; }
+      } catch {}
+    }
+    const { petId, healthStatus, livingEnvironment } = req.body;
+    const pet = pets.find(p => p._id === petId);
+    const report = {
+      _id: Date.now().toString(),
+      petId, petName: pet?.name || 'Unknown Pet',
+      userName, userEmail,
+      healthStatus: healthStatus || '',
+      livingEnvironment: livingEnvironment || '',
+      month: 1,
+      status: 'pending',
+      evaluationNotes: '',
+      submittedAt: new Date()
+    };
+    monitoringReports.push(report);
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ── Admin: get all monitoring reports ────────────────────────────────
+app.get('/api/admin/monitoring', (req, res) => {
+  res.json(monitoringReports);
+});
+
+// ── Admin: review a monitoring report ────────────────────────────────
+app.put('/api/admin/monitoring/:id', (req, res) => {
+  const report = monitoringReports.find(r => r._id === req.params.id);
+  if (!report) return res.status(404).json({ message: 'Report not found' });
+  report.status = req.body.status || 'reviewed';
+  if (req.body.evaluationNotes !== undefined) report.evaluationNotes = req.body.evaluationNotes;
+  report.reviewedAt = new Date();
+  res.json(report);
 });
 
 async function createAdminUser() {
