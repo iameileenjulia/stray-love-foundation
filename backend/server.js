@@ -428,7 +428,35 @@ app.put('/api/admin/requests/:id', (req, res) => {
 
 // ── User: get adopted pets ────────────────────────────────────────────
 app.get('/api/users/adopted-pets', (req, res) => {
-  res.json([]);
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const userId = decoded.id;
+    const approved = adoptionRequests.filter(r => r.user._id === userId && r.status === 'Approved');
+    res.json(approved.map(r => ({
+      _id: r.pet._id,
+      name: r.pet.name,
+      type: r.pet.type,
+      sex: r.pet.sex,
+      age: r.pet.age,
+      breed: r.pet.breed,
+      adoptedDate: r.reviewedAt || r.requestDate,
+      requestId: r._id
+    })));
+  } catch { res.json([]); }
+});
+
+// ── User: get my monitoring reports ──────────────────────────────────
+app.get('/api/monitoring/my-reports', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const userId = decoded.id;
+    const reports = monitoringReports.filter(r => r.authorId === userId);
+    res.json([...reports].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)));
+  } catch { res.json([]); }
 });
 
 // ── User: get dashboard stats ─────────────────────────────────────────
@@ -495,23 +523,24 @@ app.get('/api/users/activity', (req, res) => {
 app.post('/api/monitoring/reports', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    let userName = 'Unknown', userEmail = '';
+    let userName = 'Unknown', userEmail = '', authorId = '';
     if (token) {
       try {
         const decoded = require('jsonwebtoken').verify(token, 'secret_key');
         const u = users.find(x => x._id === decoded.id);
-        if (u) { userName = u.fullName; userEmail = u.email; }
+        if (u) { userName = u.fullName; userEmail = u.email; authorId = u._id; }
       } catch {}
     }
-    const { petId, healthStatus, livingEnvironment } = req.body;
+    const { petId, healthStatus, livingEnvironment, additionalNotes, month } = req.body;
     const pet = pets.find(p => p._id === petId);
     const report = {
       _id: Date.now().toString(),
       petId, petName: pet?.name || 'Unknown Pet',
-      userName, userEmail,
+      authorId, userName, userEmail,
       healthStatus: healthStatus || '',
       livingEnvironment: livingEnvironment || '',
-      month: 1,
+      additionalNotes: additionalNotes || '',
+      month: month || 1,
       status: 'pending',
       evaluationNotes: '',
       submittedAt: new Date()
