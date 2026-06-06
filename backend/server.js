@@ -305,6 +305,21 @@ app.post('/api/posts', (req, res) => {
   }
 });
 
+// ── User: get my own posts (public + private) ─────────────────────────
+app.get('/api/posts/mine', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+    const userId = decoded.id;
+    res.json(
+      posts
+        .filter(p => p.authorId === userId && p.adminStatus !== 'hidden')
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    );
+  } catch { res.json([]); }
+});
+
 // ── Public: get visible posts ─────────────────────────────────────────
 app.get('/api/posts', (req, res) => {
   res.json(

@@ -1077,3 +1077,226 @@
   background: #FFF2EB;
   color: #E57A5C;
 }
+
+/* ── Public Posts Page ── */
+.posts-page-header {
+  margin-bottom: 2rem;
+}
+
+.posts-page-header h1 {
+  font-size: 2rem;
+  background: linear-gradient(135deg, #AD8878, #6EA094);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+
+.create-post-card {
+  background: white;
+  border-radius: 36px;
+  padding: 1.8rem;
+  margin-bottom: 2rem;
+  border: 1px solid #FFE2D4;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s;
+}
+
+.create-post-card:hover {
+  transform: translateY(-3px);
+}
+
+.create-post-card .form-group {
+  margin-bottom: 1.2rem;
+}
+
+.create-post-card .form-group label {
+  display: block;
+  font-weight: 600;
+  color: #936E5C;
+  margin-bottom: 0.5rem;
+  font-size: 0.92rem;
+}
+
+.create-post-card .form-group textarea,
+.create-post-card .form-group input[type="text"] {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #FFDDD0;
+  border-radius: 24px;
+  background: #FFFDFB;
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.create-post-card .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  border-radius: 20px;
+}
+
+.create-post-card .form-group textarea:focus,
+.create-post-card .form-group input[type="text"]:focus {
+  outline: none;
+  border-color: #FFB7A8;
+  box-shadow: 0 0 0 3px rgba(255, 183, 168, 0.2);
+}
+
+.visibility-options {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.visibility-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FEF6F0;
+  padding: 0.4rem 1rem;
+  border-radius: 60px;
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 0.9rem;
+  color: #7F665A;
+  transition: background 0.2s;
+}
+
+.visibility-options label:hover {
+  background: #FFE6DC;
+}
+
+.publish-btn {
+  background: #FFC2AE;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 60px;
+  font-weight: 700;
+  color: #4D3E38;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.publish-btn:hover:not(:disabled) {
+  background: #FFB099;
+  transform: translateY(-2px);
+}
+
+.publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Stories Section ── */
+.stories-section {
+  background: white;
+  border-radius: 36px;
+  padding: 1.8rem;
+  border: 1px solid #FFE2D4;
+  box-shadow: var(--shadow-sm);
+}
+
+.stories-section h2 {
+  font-size: 1.2rem;
+  color: #AC7E68;
+  margin-bottom: 1.2rem;
+  border-left: 4px solid #FFB7A8;
+  padding-left: 0.8rem;
+  font-weight: 700;
+}
+
+.stories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.story-card {
+  background: #FFFDFB;
+  border-radius: 28px;
+  padding: 1.2rem;
+  border: 1px solid #FFE2D4;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.story-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
+}
+
+.story-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0.8rem;
+}
+
+.story-avatar {
+  width: 45px;
+  height: 45px;
+  background: #FCE4DA;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #BD826A;
+  flex-shrink: 0;
+}
+
+.story-user {
+  font-weight: 700;
+  color: #936E5C;
+  font-size: 0.95rem;
+}
+
+.story-pet {
+  font-size: 0.82rem;
+  color: #A98978;
+  margin-top: 2px;
+}
+
+.story-caption {
+  color: #7F665A;
+  line-height: 1.5;
+  font-size: 0.92rem;
+  margin: 0.5rem 0 0.8rem;
+}
+
+.story-image {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 18px;
+  margin-top: 0.5rem;
+}
+
+.story-visibility {
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.7rem;
+  border-radius: 60px;
+  background: #F1E9E4;
+  color: #A5745E;
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .stories-grid {
+    grid-template-columns: 1fr;
+  }
+}
