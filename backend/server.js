@@ -164,28 +164,30 @@ app.delete('/api/pets/:id', (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { fullName, email, contact, password } = req.body;
-    
+
     const existingUser = users.find(u => u.email === email);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
-      id: Date.now().toString(),
+      _id: Date.now().toString(),
       fullName,
       email,
       contact,
       password: hashedPassword,
       role: 'user',
+      isVerified: false,
       verificationStatus: 'pending',
+      isSuspended: false,
       createdAt: new Date()
     };
-    
+
     users.push(newUser);
     console.log('User registered:', email);
-    
-    res.json({ message: 'Registration successful! Please wait for admin verification.' });
+
+    res.json({ message: 'Registration successful! Please wait for admin verification before logging in.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -194,21 +196,31 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { identifier, password } = req.body;
-    
+
     const user = users.find(u => u.email === identifier || u.contact === identifier);
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
-    const token = jwt.sign({ id: user.id, role: user.role }, 'secret_key', { expiresIn: '30d' });
-    
+
+    // Block non-admin users who haven't been approved yet
+    if (user.role !== 'admin' && user.verificationStatus !== 'approved') {
+      return res.status(403).json({ message: 'Your account is pending admin approval. Please wait for verification.' });
+    }
+
+    // Block suspended users
+    if (user.isSuspended) {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, 'secret_key', { expiresIn: '30d' });
+
     res.json({
-      _id: user.id,
+      _id: user._id,
       fullName: user.fullName,
       email: user.email,
       role: user.role,
@@ -222,10 +234,10 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ message: 'No token' });
-  
+
   try {
     const decoded = jwt.verify(token, 'secret_key');
-    const user = users.find(u => u.id === decoded.id);
+    const user = users.find(u => u._id === decoded.id);
     if (!user) return res.status(401).json({ message: 'User not found' });
     res.json({ ...user, password: undefined });
   } catch (error) {
@@ -235,6 +247,28 @@ app.get('/api/auth/me', (req, res) => {
 
 app.get('/api/admin/users', (req, res) => {
   res.json(users.map(u => ({ ...u, password: undefined })));
+});
+
+// ── Approve or reject a user's verification ──────────────────────────
+app.put('/api/admin/users/:id/verify', (req, res) => {
+  const user = users.find(u => u._id === req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const { isVerified, verificationStatus, verificationNotes } = req.body;
+  user.isVerified = isVerified;
+  user.verificationStatus = verificationStatus || (isVerified ? 'approved' : 'rejected');
+  if (verificationNotes) user.verificationNotes = verificationNotes;
+
+  res.json({ ...user, password: undefined });
+});
+
+// ── Toggle user suspension ────────────────────────────────────────────
+app.put('/api/admin/users/:id/suspend', (req, res) => {
+  const user = users.find(u => u._id === req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  user.isSuspended = !user.isSuspended;
+  res.json({ ...user, password: undefined });
 });
 
 app.get('/api/admin/stats', (req, res) => {
@@ -250,12 +284,16 @@ app.get('/api/admin/activities', (req, res) => {
   res.json([{ icon: 'fa-user-plus', text: 'Admin dashboard loaded' }]);
 });
 
+app.post('/api/adoptions', (req, res) => {
+  res.json({ message: 'Adoption request submitted successfully' });
+});
+
 async function createAdminUser() {
   const adminExists = users.find(u => u.email === 'admin@strayloveph.org');
   if (!adminExists) {
     const hashedPassword = await bcrypt.hash('Admin@123', 10);
     users.push({
-      id: 'admin',
+      _id: 'admin',
       fullName: 'System Administrator',
       email: 'admin@strayloveph.org',
       contact: '+639123456789',
@@ -263,6 +301,7 @@ async function createAdminUser() {
       role: 'admin',
       isVerified: true,
       verificationStatus: 'approved',
+      isSuspended: false,
       createdAt: new Date()
     });
     console.log('✅ Admin user created');

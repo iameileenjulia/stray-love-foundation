@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminSidebar from '../../components/AdminSidebar';
 import toast from 'react-hot-toast';
-import './AdminPetsPage.css'; // Use same CSS as Manage Pets
+import './AdminPetsPage.css';
 
 const AdminUsersPage = () => {
   const { user, api } = useAuth();
@@ -12,8 +12,10 @@ const AdminUsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [filters, setFilters] = useState({ verification: [], status: [] });
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -37,34 +39,29 @@ const AdminUsersPage = () => {
 
   const handleVerify = async (approved) => {
     if (!selectedUser) return;
-    
     try {
-      const status = approved ? 'approved' : 'rejected';
       await api.put(`/admin/users/${selectedUser._id}/verify`, {
         isVerified: approved,
-        verificationStatus: status,
+        verificationStatus: approved ? 'approved' : 'rejected',
         verificationNotes: adminNotes
       });
-      
-      toast.success(approved ? 'User verified successfully!' : 'User rejected');
+      toast.success(approved ? 'User approved successfully!' : 'User rejected');
       fetchUsers();
       setShowVerifyModal(false);
       setSelectedUser(null);
       setAdminNotes('');
     } catch (error) {
-      toast.error('Failed to verify user');
+      toast.error('Failed to update user verification');
     }
   };
 
-  const handleSuspend = async (userId, currentStatus) => {
-    if (window.confirm(`Are you sure you want to ${currentStatus ? 'unsuspend' : 'suspend'} this user?`)) {
-      try {
-        await api.put(`/admin/users/${userId}/suspend`);
-        toast.success(`User ${currentStatus ? 'unsuspended' : 'suspended'} successfully`);
-        fetchUsers();
-      } catch (error) {
-        toast.error('Operation failed');
-      }
+  const handleSuspend = async (userId, currentSuspended) => {
+    try {
+      await api.put(`/admin/users/${userId}/suspend`);
+      toast.success(`User ${currentSuspended ? 'unsuspended' : 'suspended'} successfully`);
+      fetchUsers();
+    } catch (error) {
+      toast.error('Operation failed');
     }
   };
 
@@ -74,21 +71,44 @@ const AdminUsersPage = () => {
     setShowVerifyModal(true);
   };
 
-  const filteredUsers = users.filter(u => {
-    if (searchTerm && !u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !u.email.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
+  const toggleFilterOption = (group, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [group]: prev[group].includes(value)
+        ? prev[group].filter(v => v !== value)
+        : [...prev[group], value]
+    }));
+  };
 
-  const sortedUsers = [...filteredUsers].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const nonAdminUsers = users.filter(u => u.role !== 'admin');
+
+  const filteredUsers = nonAdminUsers
+    .filter(u => {
+      if (searchTerm &&
+        !u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !u.email?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (filters.verification.length) {
+        const vs = u.verificationStatus === 'approved' ? 'verified' : 'pending';
+        if (!filters.verification.includes(vs)) return false;
+      }
+      if (filters.status.length) {
+        const as = u.isSuspended ? 'suspended' : 'active';
+        if (!filters.status.includes(as)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const pendingCount = nonAdminUsers.filter(u => u.verificationStatus === 'pending').length;
+  const verifiedCount = nonAdminUsers.filter(u => u.verificationStatus === 'approved').length;
 
   if (loading) {
     return (
       <div className="admin-wrapper">
         <AdminSidebar />
-        <div className="admin-loading">Loading users...</div>
+        <main className="admin-content">
+          <div className="no-data">Loading users...</div>
+        </main>
       </div>
     );
   }
@@ -101,13 +121,13 @@ const AdminUsersPage = () => {
           <h1><i className="fas fa-users"></i> MANAGE USERS</h1>
           <div className="stats-summary">
             <span className="stat-badge">
-              <i className="fas fa-users"></i> Total: {users.length}
+              <i className="fas fa-users"></i> Total: {nonAdminUsers.length}
             </span>
             <span className="stat-badge pending-count">
-              <i className="fas fa-clock"></i> Pending: {users.filter(u => u.verificationStatus === 'pending').length}
+              <i className="fas fa-clock"></i> Pending: {pendingCount}
             </span>
             <span className="stat-badge verified-count">
-              <i className="fas fa-check-circle"></i> Verified: {users.filter(u => u.verificationStatus === 'approved').length}
+              <i className="fas fa-check-circle"></i> Verified: {verifiedCount}
             </span>
           </div>
         </div>
@@ -122,31 +142,27 @@ const AdminUsersPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button className="filter-btn" onClick={() => setShowFilterModal(true)}>
+            <i className="fas fa-sliders-h"></i> Filter
+          </button>
         </div>
 
         <div className="pets-table-container">
           <table className="pets-table">
             <thead>
               <tr>
-                <th>User</th>
-                <th>Contact</th>
-                <th>Registered</th>
+                <th>Name</th>
+                <th>Email</th>
                 <th>Verification</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {sortedUsers.map(u => (
+              {filteredUsers.map(u => (
                 <tr key={u._id} className={u.verificationStatus === 'pending' ? 'pending-row' : ''}>
-                  <td>
-                    <div>
-                      <div className="user-name" style={{ fontWeight: '600', color: '#5E4B3F' }}>{u.fullName}</div>
-                      <div className="user-email" style={{ fontSize: '0.75rem', color: '#A98978' }}>{u.email}</div>
-                    </div>
-                  </td>
-                  <td>{u.contact}</td>
-                  <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                  <td><strong>{u.fullName}</strong></td>
+                  <td>{u.email}</td>
                   <td>
                     {u.verificationStatus === 'approved' ? (
                       <span className="badge-verified"><i className="fas fa-check-circle"></i> VERIFIED</span>
@@ -163,11 +179,9 @@ const AdminUsersPage = () => {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      {u.verificationStatus === 'pending' && (
-                        <button className="action-btn view" onClick={() => openVerifyModal(u)}>
-                          <i className="fas fa-id-card"></i> Verify
-                        </button>
-                      )}
+                      <button className="action-btn view" onClick={() => openVerifyModal(u)}>
+                        <i className="fas fa-id-card"></i> Verify
+                      </button>
                       <button className="action-btn delete" onClick={() => handleSuspend(u._id, u.isSuspended)}>
                         <i className={`fas ${u.isSuspended ? 'fa-user-check' : 'fa-ban'}`}></i>
                         {u.isSuspended ? ' Unsuspend' : ' Suspend'}
@@ -178,22 +192,65 @@ const AdminUsersPage = () => {
               ))}
             </tbody>
           </table>
-          {sortedUsers.length === 0 && (
+          {filteredUsers.length === 0 && (
             <div className="no-data">No users found</div>
           )}
         </div>
       </main>
 
-      {/* Verify Modal */}
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
+          <div className="modal-container filter-modal" onClick={e => e.stopPropagation()}>
+            <i className="fas fa-times modal-close" onClick={() => setShowFilterModal(false)}></i>
+            <h2><i className="fas fa-filter"></i> Filter Users</h2>
+            <div className="filter-group">
+              <label>Verification</label>
+              <div className="filter-options">
+                {[['verified', 'Verified'], ['pending', 'Pending']].map(([val, label]) => (
+                  <label key={val}>
+                    <input
+                      type="checkbox"
+                      checked={filters.verification.includes(val)}
+                      onChange={() => toggleFilterOption('verification', val)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="filter-group">
+              <label>Account Status</label>
+              <div className="filter-options">
+                {[['active', 'Active'], ['suspended', 'Suspended']].map(([val, label]) => (
+                  <label key={val}>
+                    <input
+                      type="checkbox"
+                      checked={filters.status.includes(val)}
+                      onChange={() => toggleFilterOption('status', val)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <button className="apply-filter-btn" onClick={() => setShowFilterModal(false)}>
+              <i className="fas fa-check"></i> Apply Filter
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Verify User Modal */}
       {showVerifyModal && selectedUser && (
-        <div className="modal-overlay active" onClick={() => setShowVerifyModal(false)}>
-          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowVerifyModal(false)}>
+          <div className="modal-container" onClick={e => e.stopPropagation()}>
             <i className="fas fa-times modal-close" onClick={() => setShowVerifyModal(false)}></i>
-            <h2><i className="fas fa-id-card"></i> Verify User</h2>
-            
+            <h2><i className="fas fa-id-card"></i> VERIFY USER</h2>
+
             <div className="user-details">
               <div className="detail-row">
-                <span className="detail-label">Full Name:</span>
+                <span className="detail-label">User Name:</span>
                 <span className="detail-value">{selectedUser.fullName}</span>
               </div>
               <div className="detail-row">
@@ -201,39 +258,53 @@ const AdminUsersPage = () => {
                 <span className="detail-value">{selectedUser.email}</span>
               </div>
               <div className="detail-row">
-                <span className="detail-label">Contact:</span>
-                <span className="detail-value">{selectedUser.contact}</span>
+                <span className="detail-label">Contact Number:</span>
+                <span className="detail-value">{selectedUser.contact || 'N/A'}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Registered:</span>
                 <span className="detail-value">{new Date(selectedUser.createdAt).toLocaleString()}</span>
               </div>
+              <div className="detail-row">
+                <span className="detail-label">Verification:</span>
+                <span className="detail-value">
+                  {selectedUser.verificationStatus === 'approved' ? (
+                    <span className="badge-verified"><i className="fas fa-check-circle"></i> VERIFIED</span>
+                  ) : selectedUser.verificationStatus === 'rejected' ? (
+                    <span className="badge-rejected"><i className="fas fa-times-circle"></i> REJECTED</span>
+                  ) : (
+                    <span className="badge-pending"><i className="fas fa-clock"></i> PENDING</span>
+                  )}
+                </span>
+              </div>
             </div>
 
             <div className="id-preview">
               <i className="fas fa-id-card" style={{ fontSize: '2rem', color: '#C28A7A' }}></i>
-              <p><strong>Uploaded ID:</strong> {selectedUser.idFileName || 'No ID uploaded'}</p>
-              {selectedUser.idImageData && (
-                <img src={selectedUser.idImageData} alt="User ID" />
+              <p><strong>Uploaded Valid ID:</strong> {selectedUser.idFileName || 'No ID uploaded'}</p>
+              {selectedUser.idImageData ? (
+                <img src={selectedUser.idImageData} alt="ID Preview" />
+              ) : (
+                <p style={{ color: '#A98978' }}>No preview available</p>
               )}
             </div>
 
             <div className="admin-notes">
-              <label>Admin Notes</label>
+              <label><strong>ADMIN NOTES</strong></label>
               <textarea
                 rows="3"
                 value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Add notes about this verification..."
+                onChange={e => setAdminNotes(e.target.value)}
+                placeholder="Type your notes here..."
               />
             </div>
 
             <div className="modal-actions">
               <button className="approve-btn" onClick={() => handleVerify(true)}>
-                <i className="fas fa-check-circle"></i> Approve User
+                <i className="fas fa-check-circle"></i> Approve
               </button>
               <button className="reject-btn" onClick={() => handleVerify(false)}>
-                <i className="fas fa-times-circle"></i> Reject User
+                <i className="fas fa-times-circle"></i> Reject
               </button>
             </div>
           </div>
