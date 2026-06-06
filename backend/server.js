@@ -431,6 +431,66 @@ app.get('/api/users/adopted-pets', (req, res) => {
   res.json([]);
 });
 
+// ── User: get dashboard stats ─────────────────────────────────────────
+app.get('/api/users/stats', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    let userId = null;
+    if (token) {
+      try {
+        const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+        userId = decoded.id;
+      } catch {}
+    }
+    const userRequests = adoptionRequests.filter(r => r.user?._id === userId);
+    res.json({
+      adoptionRequests: userRequests.length,
+      approvedPets: userRequests.filter(r => r.status === 'Approved').length,
+      pendingMonitoring: monitoringReports.filter(r => r.authorId === userId && r.status === 'pending').length
+    });
+  } catch (error) {
+    res.json({ adoptionRequests: 0, approvedPets: 0, pendingMonitoring: 0 });
+  }
+});
+
+// ── User: get recent activity ─────────────────────────────────────────
+app.get('/api/users/activity', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    let userId = null;
+    if (token) {
+      try {
+        const decoded = require('jsonwebtoken').verify(token, 'secret_key');
+        userId = decoded.id;
+      } catch {}
+    }
+    const activity = [];
+    adoptionRequests
+      .filter(r => r.user?._id === userId)
+      .slice(0, 3)
+      .forEach(r => {
+        activity.push({
+          icon: 'fa-paper-plane',
+          text: `Adoption Request Submitted — ${r.pet?.name || 'a pet'}`,
+          timestamp: r.requestDate
+        });
+        if (r.status === 'Approved') {
+          activity.push({ icon: 'fa-check-circle', text: `Adoption Approved — ${r.pet?.name}`, timestamp: r.reviewedAt });
+        }
+      });
+    monitoringReports
+      .filter(r => r.authorId === userId)
+      .slice(0, 2)
+      .forEach(r => {
+        activity.push({ icon: 'fa-clipboard-list', text: `Monitoring Report Submitted — ${r.petName}`, timestamp: r.submittedAt });
+      });
+    activity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    res.json(activity.slice(0, 5));
+  } catch (error) {
+    res.json([]);
+  }
+});
+
 // ── User: submit monitoring report ───────────────────────────────────
 app.post('/api/monitoring/reports', (req, res) => {
   try {

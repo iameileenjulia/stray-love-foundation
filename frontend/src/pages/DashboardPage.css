@@ -1,0 +1,452 @@
+/* ── Dashboard Layout ── */
+.dashboard-container {
+  display: flex;
+  max-width: 1400px;
+  margin: 2rem auto;
+  gap: 2rem;
+  padding: 0 2rem;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  flex: 0 0 260px;
+  background: rgba(255, 248, 242, 0.85);
+  backdrop-filter: blur(8px);
+  border-radius: 40px;
+  padding: 1.5rem;
+  border: 1px solid #FFE2D4;
+  height: fit-content;
+  position: sticky;
+  top: 100px;
+}
+
+.sidebar h3 {
+  color: #AC7E68;
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #FFB7A8;
+  padding-left: 0.8rem;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar nav ul li {
+  margin: 0.6rem 0;
+}
+
+.sidebar nav ul li a,
+.sidebar nav ul li .logout-btn {
+  text-decoration: none;
+  color: #7F665A;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.65rem 1rem;
+  border-radius: 60px;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sidebar nav ul li a i,
+.sidebar nav ul li .logout-btn i {
+  width: 24px;
+  color: #D28D72;
+}
+
+.sidebar nav ul li a:hover,
+.sidebar nav ul li a.active,
+.sidebar nav ul li .logout-btn:hover {
+  background: #FFE6DC;
+  color: #C27D62;
+}
+
+/* ── Main Content ── */
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Welcome Card ── */
+.welcome-card {
+  background: white;
+  border-radius: 36px;
+  padding: 1.8rem 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid #FFE2D4;
+  box-shadow: var(--shadow-sm);
+}
+
+.welcome-card h1 {
+  font-size: 2rem;
+  color: #936E5C;
+  margin-bottom: 0.8rem;
+  font-weight: 800;
+}
+
+.welcome-card h1 span {
+  background: linear-gradient(135deg, #C28A7A, #6B9C8F);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #E0F2E9;
+  padding: 0.35rem 1rem;
+  border-radius: 60px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4B7B6E;
+}
+
+.verification-badge.pending {
+  background: #FFF2EB;
+  color: #E57A5C;
+}
+
+/* ── Stats Grid ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.stats-grid .stat-card {
+  background: white;
+  border-radius: 28px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid #FFE2D4;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stats-grid .stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.stats-grid .stat-card > i {
+  font-size: 2.2rem;
+  color: #C28A7A;
+  margin-bottom: 0.8rem;
+  display: block;
+}
+
+.stats-grid .stat-card .stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #6B9C8F;
+}
+
+.stats-grid .stat-card .stat-label {
+  color: #7F665A;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+/* ── Recent Activity ── */
+.recent-activity {
+  background: white;
+  border-radius: 36px;
+  padding: 1.5rem 2rem;
+  border: 1px solid #FFE2D4;
+  box-shadow: var(--shadow-sm);
+}
+
+.recent-activity h3 {
+  color: #AC7E68;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+}
+
+.activity-list li {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #FFE2D4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #7F665A;
+  font-size: 0.95rem;
+}
+
+.activity-list li:last-child {
+  border-bottom: none;
+}
+
+.activity-list li i {
+  width: 28px;
+  color: #D28D72;
+  flex-shrink: 0;
+}
+
+/* ── Shared form styles for dashboard sub-pages ── */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: #936E5C;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #FFDDD0;
+  border-radius: 24px;
+  background: #FFFDFB;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #FFB7A8;
+  box-shadow: 0 0 0 3px rgba(255, 183, 168, 0.2);
+}
+
+.btn-primary {
+  background: #FFB7A8;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 60px;
+  font-weight: 700;
+  color: #4D3530;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.btn-primary:hover {
+  background: #FF9B85;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 160, 130, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-view {
+  background: #FFF0EA;
+  border: 1px solid #FFD6C4;
+  padding: 8px 16px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #C27D62;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-view:hover {
+  background: #FFE6DC;
+  transform: translateY(-2px);
+}
+
+/* ── Pet Card Grid (shared across dashboard browse) ── */
+.pets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.pet-card {
+  background: white;
+  border-radius: 28px;
+  border: 1px solid #FFE2D4;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pet-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.pet-img {
+  width: 100%;
+  height: 160px;
+  background: #FAEEE8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #C28A7A;
+  font-size: 3.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.pet-info {
+  padding: 1rem;
+}
+
+.pet-info h3 {
+  color: #5E4B3F;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.pet-meta {
+  font-size: 0.82rem;
+  color: #A98978;
+  margin-bottom: 0.6rem;
+}
+
+/* ── Monitoring / My Requests shared card ── */
+.monitoring-card,
+.monitoring-header {
+  background: white;
+  border-radius: 36px;
+  padding: 1.5rem 2rem;
+  border: 1px solid #FFE2D4;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.monitoring-header h1 {
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #AD8878, #6EA094);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #AC7E68;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #A98978;
+}
+
+.adopted-pets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.adopted-pet-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: #FFF8F2;
+  border-radius: 20px;
+  border: 1px solid #FFE2D4;
+}
+
+.pet-name {
+  font-weight: 700;
+  color: #5E4B3F;
+}
+
+.adoption-date {
+  font-size: 0.8rem;
+  color: #A98978;
+  margin-top: 0.2rem;
+}
+
+.submit-report-btn {
+  background: #FFB7A8;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 60px;
+  font-weight: 600;
+  color: #4D3530;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.submit-report-btn:hover {
+  background: #FF9B85;
+  transform: translateY(-2px);
+}
+
+/* ── Checkbox for forms ── */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #7F665A;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .dashboard-container {
+    flex-direction: column;
+    padding: 0 1rem;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    flex: none;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-card h1 {
+    font-size: 1.5rem;
+  }
+}
